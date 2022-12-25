@@ -5,7 +5,7 @@ defmodule Nostrex.EventsTest do
 
   defp sample_event_params() do
     %{
-      id: "dc90c95f09947507c1044e8f48bcf6350aa6bff1507dd4acfc755b9239b5c962",
+      id: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
       pubkey: "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d",
       created_at: DateTime.from_unix!(1671994854),#DateTime.utc_now(),
       kind: 1,
@@ -51,7 +51,7 @@ defmodule Nostrex.EventsTest do
     event_params = sample_event_params()
     {:ok, event} = Events.create_event(event_params)
 
-    {:ok, serialized_event} = Events.serialize_event(event)
+    {:ok, serialized_event} = Event.serialize_event(event)
     assert serialized_event == "[0,\"3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d\",1671994854,1,[],\"jet fuel can't melt steel beams\"]"
   end
 
@@ -59,6 +59,6 @@ defmodule Nostrex.EventsTest do
     event_params = sample_event_params()
     {:ok, event} = Events.create_event(event_params)
 
-    IO.inspect(Events.calculate_event_id(event))
+    assert event.id == Event.calculate_event_id(event)
   end
 end
