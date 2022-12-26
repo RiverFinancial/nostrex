@@ -17,6 +17,29 @@ config :nostrex, NostrexWeb.Endpoint,
   pubsub_server: Nostrex.PubSub,
   live_view: [signing_salt: "NimhoO13"]
 
+config :nostrex, NostrexWeb.Endpoint,
+  http: [
+    dispatch: [
+      {:_,
+       [
+         {"/websocket", NostrexWeb.NostrSocket, []},
+         {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
+       ]}
+    ]
+  ]
+
+
+# dispatch = [
+#       _: [
+#         {"/websocket", NostrexWeb.NostrSocket, []},
+#         {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
+#       ]
+#     ]
+
+# config :nostrex, NostrexWeb.Endpoint,
+#   http: [dispatch: dispatch],
+#   https: [dispatch: dispatch]
+
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails
