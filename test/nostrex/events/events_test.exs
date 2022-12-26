@@ -30,6 +30,14 @@ defmodule Nostrex.EventsTest do
     assert saved_event.id == event.id
   end
 
+  test "ensure unique constraint functions and doesn't raise error" do
+    event_params = sample_event_params()
+    {:ok, _} = Events.create_event(event_params)
+
+    # simply testing that this doesn't throw is sufficient
+    {:error, _} = Events.create_event(event_params)
+  end
+
   test "ensure validation of proper field lengths and formatting" do
     
   end
@@ -51,7 +59,7 @@ defmodule Nostrex.EventsTest do
     event_params = sample_event_params()
     {:ok, event} = Events.create_event(event_params)
 
-    {:ok, serialized_event} = Event.serialize_event(event)
+    {:ok, serialized_event} = Event.serialize(event)
     assert serialized_event == "[0,\"3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d\",1671994854,1,[],\"jet fuel can't melt steel beams\"]"
   end
 
@@ -59,6 +67,6 @@ defmodule Nostrex.EventsTest do
     event_params = sample_event_params()
     {:ok, event} = Events.create_event(event_params)
 
-    assert event.id == Event.calculate_event_id(event)
+    assert event.id == Event.calculate_id(event)
   end
 end

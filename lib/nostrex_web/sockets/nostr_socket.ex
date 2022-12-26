@@ -1,6 +1,8 @@
 defmodule NostrexWeb.NostrSocket do
 	# NOT USING Phoenix.Socket because it requires a proprietary wire protocol that is incompatible with Nostr
 
+	alias Nostrex.Events
+	alias Nostrex.Events.Event
 
 	@moduledoc """
 	  Simple Websocket handler that echos back any data it receives
@@ -43,6 +45,45 @@ defmodule NostrexWeb.NostrSocket do
 
 	  # Implement basic ping pong handler for easy health checking
 	  def websocket_handle({:text, "ping"}, state), do: {[{:text, "pong"}], state}
+
+	  
+  	# Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
+  	# and is called by clients to publishing new Nostr events
+	  def websocket_handle({:text, "[EVENT], " <> event_str}, state) do
+	  	IO.puts("[EVENT] endpoint hit")
+
+	  	# the :atoms! option is important as it utilizes String.to_existing_atom
+	  	# there would be a DoS vulnerability here otherwise
+	  	event_params = Event.json_string_to_map(event_str)
+	  	resp = case Events.create_event(event_params) do
+	  		{:ok, event} -> "successfully created event #{event.id}"
+	  		 _ -> "error: unable to save event"
+	  	end
+
+	  	{[{:text, resp}], state}
+	  end
+
+	  @doc """
+  	Handles all Nostr [REQ] messages. This endpoint is very DB read heavy
+  	and also grows the in-memory PubSub state. It's used by clients
+  	to query and subscribe to events based on a filter
+	  """
+	  def websocket_handle({:text, "[REQ], " <> body}, state) do
+	  	IO.puts("[REQ] endpoint hit")
+	  	payload = Jason.decode(body)
+	  	
+	  	{[{:text, "success"}], state}
+	  end
+
+	  @doc """
+  	Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
+  	and also grows the in-memory PubSub state.
+	  """
+	  def websocket_handle({:text, "[CLOSE], " <> subscription_id}, state) do
+	  	IO.puts("[CLOSE] endpoint hit")
+	  	
+	  	{[{:text, "success"}], state}
+	  end
 
 	  # a message was delivered from a client. Here we handle it by just echoing it back
 	  # to the client.
