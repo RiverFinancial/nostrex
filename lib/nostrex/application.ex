@@ -13,7 +13,7 @@ defmodule Nostrex.Application do
       # Start the Telemetry supervisor
       NostrexWeb.Telemetry,
       # Start the PubSub system
-      {Phoenix.PubSub, name: Nostrex.PubSub},
+      {Phoenix.PubSub, name: :nostrex_pubsub},
       # Start the Endpoint (http/https)
       NostrexWeb.Endpoint
       # Start a worker by calling: Nostrex.Worker.start_link(arg)
