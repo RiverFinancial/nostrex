@@ -19,10 +19,12 @@ defmodule Nostrex.Events.Event do
     event
     |> cast(attrs, @required_attrs)
     |> validate_required(@required_attrs)
-    |> validate_length(:id, is: 64) # 64 character hex string for 32 bytes
+    # 64 character hex string for 32 bytes
+    |> validate_length(:id, is: 64)
     |> validate_length(:pubkey, is: 64)
-    |> validate_length(:sig, is: 64*2)
-    |> unique_constraint(:id, name: "events_pkey") # required to prevent throwing error on duplicate entry
+    |> validate_length(:sig, is: 64 * 2)
+    # required to prevent throwing error on duplicate entry
+    |> unique_constraint(:id, name: "events_pkey")
   end
 
   @doc """
@@ -32,10 +34,9 @@ defmodule Nostrex.Events.Event do
   # TODO: don't throw error when non-valid keys sent
   def json_string_to_map(event_str) do
     # key_whitelist = ["id", "pubkey", "created_at", "kind", "conetent", "sig", "tags"]
-    {:ok, map} = Jason.decode(event_str, keys: :atoms!) 
+    {:ok, map} = Jason.decode(event_str, keys: :atoms!)
     map
   end
-
 
   # TODO, move these to the Event struct as they are very much scoped purely for validation
 
@@ -50,7 +51,8 @@ defmodule Nostrex.Events.Event do
       event.pubkey,
       DateTime.to_unix(event.created_at, :second),
       event.kind,
-      [], # TODO: add tag functionality next
+      # TODO: add tag functionality next
+      [],
       event.content
     ])
   end
@@ -61,6 +63,7 @@ defmodule Nostrex.Events.Event do
   """
   def calculate_id(event) do
     {:ok, serialized_event} = serialize(event)
+
     :crypto.hash(:sha256, serialized_event)
     |> Base.encode16(case: :lower)
   end
@@ -73,6 +76,5 @@ defmodule Nostrex.Events.Event do
 
   # TODO
   defp validate_signature(pubkey, event_id, sig) do
-    
   end
 end

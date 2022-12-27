@@ -28,7 +28,6 @@ config :nostrex, NostrexWeb.Endpoint,
     ]
   ]
 
-
 # dispatch = [
 #       _: [
 #         {"/websocket", NostrexWeb.NostrSocket, []},
