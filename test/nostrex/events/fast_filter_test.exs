@@ -1,7 +1,7 @@
 defmodule Nostrex.FastFilterTest do
   use Nostrex.DataCase
   alias Nostrex.Events
-  alias Nostrex.Events.Event
+  alias Nostrex.Events.{Filter, Event}
   alias Nostrex.{FastFilter, FastFilterTableManager}
   require IEx
 
@@ -18,30 +18,31 @@ defmodule Nostrex.FastFilterTest do
     }
   end
 
-  defp sample_filter_json() do
-    ~s"""
-      {
-        "ids": ["aa", "bb", "cc"],
-        "authors": ["aa", "bb", "cc"],
-        "kinds": [0, 1, 2, 3],
-        "since": 1000,
-        "until": 1000,
-        "limit": 100,
-        "#e": ["aa", "bb", "cc"],
-        "#p": ["dd", "ee", "ff"],
-        "#r": ["00", "11", "22"]
-      }
-    """
-
-    '{"ids":["aa","bb","cc"],"authors":["aa","bb","cc"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}'
-  end
-
   test "test filter ets tables get created properly" do
     ff_tables_list = FastFilterTableManager.ets_tables()
     assert Enum.count(ff_tables_list) > 0
 
     for table <- ff_tables_list do
       assert :ets.info(table) != :undefined
+    end
+  end
+
+  test "generating filter ids used for fast lookups" do
+    valid_filters = [
+      ['{"ids":["aa","bb","cc"],"authors":["aa","bb","cc"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}', "ape"],
+      ['{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', "a"],
+      ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', ""]
+    ]
+
+
+    
+    for [f, i] <- valid_filters do
+      params = Jason.decode!(f, keys: :atoms)
+      id = %Filter{}
+        |> Filter.changeset(params)
+        |> apply_action!(:update)
+        |> FastFilter.generate_filter_id()
+      assert id == i
     end
   end
 

@@ -20,7 +20,6 @@ defmodule Nostrex.Events.Filter do
     filter
     |> cast(attrs, @optional_attrs)
     |> validate_one_field_not_empty()
-    |> apply_action(:update)
   end
 
   defp validate_one_field_not_empty(changeset) do
@@ -51,4 +50,6 @@ defmodule Nostrex.Events.Filter do
   defp is_empty?(_) do
     false
   end
+
+
 end

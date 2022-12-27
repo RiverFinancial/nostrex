@@ -13,16 +13,13 @@
       # ['', false]
     ]
 
-    # defp sample_filter_params() do
-    #   Jason.decode!(sample_filter_string(), keys: :atoms)
-    # end
-
     test "create filter and perform basic validation" do
       for [f, res] <- @test_filters do
         
         params = Jason.decode!(f, keys: :atoms)
         {is_valid, filter} = %Filter{}
           |> Filter.changeset(params)
+          |> apply_action(:update)
 
         if is_valid == :ok do
           assert res
@@ -30,11 +27,5 @@
           refute res
         end
       end
-
-      # params = sample_filter_params()
-      # filter = %Filter{}
-      # |> Filter.changeset(params)
-
-      # IO.inspect(filter)
     end
   end

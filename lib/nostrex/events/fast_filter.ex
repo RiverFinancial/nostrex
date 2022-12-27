@@ -70,19 +70,6 @@ defmodule Nostrex.FastFilter do
   2. remove subscription id from each of the ets tables
 
   """
-
-
-
-  # Create ETS tables on startup
-  # Gets called in Application.ex
-  # def setup() do
-  #   ets_opts = [:set, :public, write_concurrency: true, read_concurrency: true]
-  #   for table <- @ets_tables do
-  #     IO.puts "creating table"
-  #     :ets.new(table, ets_opts)
-  #   end
-  # end
-
   def insert_filter(filter = %Filter{}) do
     filter_id = generate_filter_id(filter)
   end
@@ -93,6 +80,17 @@ defmodule Nostrex.FastFilter do
   def process_event(author_pubkey: pubkey, tags: tags, kind: kind, raw_event: raw_event) do
   end
 
-  defp generate_filter_id(filter = %Filter{}) do
+  @doc """
+  generates a fingerprint that includes non or all of the letters: a, p, e
+  """
+  def generate_filter_id(filter = %Filter{}) do
+    ""
+    |> append_if(filter.authors, "a")
+    |> append_if(filter."#p", "p")
+    |> append_if(filter."#e", "e")
+  end
+
+  defp append_if(string, condition, string2) do
+    if condition, do: string <> string2, else: string
   end
 end
