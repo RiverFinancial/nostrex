@@ -171,6 +171,7 @@ defmodule NostrexWeb.NostrSocket do
     IO.puts("called!!! pubsub")
   end
 
+  @impl true
   def terminate(_reason, _partial_req, state) do
     ## Ensure any state gets cleaned up before terminating
     IO.puts("TERMINATE CALLED")
@@ -193,16 +194,17 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   defp handle_req_event(subscription_id, filters) do
-    # if until is empty or is after now
-    if filters["until"] == nil or !timestamp_before_now?(filters["until"]) do
-      # register the subscriber
-      PubSub.subscribe(:nostrex_pubsub, "req:#{subscription_id}")
+    # TODO move to safer place to only happen for future subscriptions, not all
+    # register the subscriber
+    PubSub.subscribe(:nostrex_pubsub, "req:#{subscription_id}")
 
-      FastFilter.insert_filter()
-
-      # Create the ETS entries
-      # create_subscription_ets_entries(filters)
+    for filter <- filters do
+      if filter[:until] == nil or !timestamp_before_now?(filters[:until]) do
+        FastFilter.insert_filter(filter, subscription_id)
+      end
     end
+    # if until is empty or is after now
+
   end
 
   # defp create_subscription_ets_entries do

@@ -70,8 +70,23 @@ defmodule Nostrex.FastFilter do
   2. remove subscription id from each of the ets tables
 
   """
-  def insert_filter(filter = %Filter{}) do
-    filter_id = generate_filter_id(filter)
+  def insert_filter(filter = %Filter{}, subscription_id) do
+    filter_id = generate_filter_id(subscription_id, filter)
+
+    ets_insert(:nostrex_ff_pubkeys, filter_id, filter.authors)
+    ets_insert(:nostrex_ff_ptags, filter_id, filter."#p")
+    ets_insert(:nostrex_ff_etags, filter_id, filter."#e")
+  end
+
+  defp ets_insert(table_name, filter_id, keys) when is_list(keys) do
+    for key <- keys do
+      :ets.insert(table_name, {key, filter_id})
+    end
+  end
+
+  # :ets.insert() returns true or false as well so just imitating here
+  defp ets_insert(_, _, _) do
+    true
   end
 
   def delete_filter() do
@@ -80,10 +95,15 @@ defmodule Nostrex.FastFilter do
   def process_event(author_pubkey: pubkey, tags: tags, kind: kind, raw_event: raw_event) do
   end
 
+  def generate_filter_id(subscription_id, filter) do
+    code = generate_filter_code(filter)
+    "#{code}:#{subscription_id}:#{:rand.uniform(99)}"
+  end
+
   @doc """
   generates a fingerprint that includes non or all of the letters: a, p, e
   """
-  def generate_filter_id(filter = %Filter{}) do
+  def generate_filter_code(filter = %Filter{}) do
     ""
     |> append_if(filter.authors, "a")
     |> append_if(filter."#p", "p")

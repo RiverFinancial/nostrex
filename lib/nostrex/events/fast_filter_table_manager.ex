@@ -15,9 +15,13 @@ defmodule Nostrex.FastFilterTableManager do
   end
 
   # Create ETS tables on startup
+  # we are making it a :bag table so that we can have multiple values stored at the same key (but deduped)
+  # public ensures that anyone can read and write to it
+  # named_table ensures the tables have readable name
+  # and we want concurrent access for performance. race conditions are probably fine for this kind of application
   @impl true
   def init(_) do
-  	ets_opts = [:set, :public, :named_table, write_concurrency: true, read_concurrency: true]
+  	ets_opts = [:bag, :public, :named_table, write_concurrency: true, read_concurrency: true]
   	for table <- @ets_tables do
   	  :ets.new(table, ets_opts)
   	end
@@ -25,3 +29,9 @@ defmodule Nostrex.FastFilterTableManager do
     {:ok, []}
   end
 end
+
+# iex(1)> :ets.insert(:nostrex_ff_pubkeys, {:test, 1})
+# true
+# iex(2)> :ets.insert(:nostrex_ff_pubkeys, {:test, 2})
+# true
+# iex(3)> :ets.lookup(:nostrex_ff_pubkeys, :test)
