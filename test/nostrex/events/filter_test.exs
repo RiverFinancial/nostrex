@@ -17,7 +17,7 @@
       for [f, res] <- @test_filters do
         
         params = Jason.decode!(f, keys: :atoms)
-        {is_valid, filter} = %Filter{}
+        {is_valid, _filter} = %Filter{}
           |> Filter.changeset(params)
           |> apply_action(:update)
 

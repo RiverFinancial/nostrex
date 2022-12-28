@@ -1,8 +1,10 @@
 defmodule Nostrex.Events.Event do
   use Ecto.Schema
   import Ecto.Changeset
+  alias Nostrex.Events.Tag
 
   @primary_key {:id, :string, autogenerate: false}
+
 
   schema "events" do
     field :pubkey, :string
@@ -10,6 +12,7 @@ defmodule Nostrex.Events.Event do
     field :kind, :integer
     field :content, :string
     field :sig, :string
+    has_many :tags, Tag
     timestamps()
   end
 
@@ -18,6 +21,7 @@ defmodule Nostrex.Events.Event do
   def changeset(event, attrs) do
     event
     |> cast(attrs, @required_attrs)
+    |> cast_assoc(:tags, with: &Tag.changeset/2)
     |> validate_required(@required_attrs)
     # 64 character hex string for 32 bytes
     |> validate_length(:id, is: 64)

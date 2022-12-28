@@ -92,13 +92,52 @@ defmodule Nostrex.FastFilter do
   def delete_filter() do
   end
 
-  def process_event(author_pubkey: pubkey, tags: tags, kind: kind, raw_event: raw_event) do
+  def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: kind}) do
+    # create base data structures for algo
+    a_filter_set = MapSet.new()
+    p_filter_set = MapSet.new()
+    e_filter_set = MapSet.new()
+    already_broadcast_sub_ids = MapSet.new()
+
+    # lookup filters subcribed to author
+    author_match_filters = :ets.lookup_element(:nostrex_ff_pubkeys, pubkey, 2)
+
+    author_match_filters
+      |> Enum.each(fn f ->
+        %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+        if code == "a" do
+          broadcast_event(subscription_id, event)
+          MapSet.put(already_broadcast_sub_ids, subscription_id)
+        else
+          MapSet.put(a_filter_set, f)
+        end
+      end)
+
+
+    # tags
+    p_match_filters = :ets.lookup_element(:nostrex_ff_ptags, pubkey, 2)
+
+
+    # p_match_filters = :ets.lookup_element(:nostre)
+  end
+
+  defp broadcast_event(subscription_id, event) do
+    PubSub.broadcast(:nostrex_pubsub, "req:#{subscription_id}", {:event, event})
   end
 
   def generate_filter_id(subscription_id, filter) do
     code = generate_filter_code(filter)
     "#{code}:#{subscription_id}:#{:rand.uniform(99)}"
   end
+
+  def parse_filter_id(filter_id) do
+    [code, subscription_id, _] = String.split(filter_id, ":")
+    %{
+      code: code,
+      subscription_id: subscription_id
+    }
+  end
+
 
   @doc """
   generates a fingerprint that includes non or all of the letters: a, p, e

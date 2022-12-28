@@ -2,9 +2,10 @@ defmodule NostrexWeb.NostrSocket do
   # NOT USING Phoenix.Socket because it requires a proprietary wire protocol that is incompatible with Nostr
 
   alias Nostrex.Events
-  alias Nostrex.Events.Event
+  alias Nostrex.Events.{Event, Tag}
   alias Phoenix.PubSub
   alias Nostrex.FastFilter
+  alias NostrexWeb.MessageParser
 
   @moduledoc """
   Simple Websocket handler that echos back any data it receives
@@ -67,29 +68,13 @@ defmodule NostrexWeb.NostrSocket do
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events
   def websocket_handle({:text, req = "[\"EVENT\"," <> _}, state) do
-    IO.puts("EVENT endpoint hit")
-    IO.inspect(state)
+    event_params = MessageParser.parse_and_sanity_check_event(req)
 
-    # TODO: change this to not lead to dos vuln
-    {:ok, list} = Jason.decode(req, keys: :atoms)
-    event_params = Enum.at(list, 1)
-
-    {:ok, raw_event} = Jason.encode(event_params)
-
-    IO.puts("parsed")
-    # the :atoms! option is important as it utilizes String.to_existing_atom
-    # there would be a DoS vulnerability here otherwise
-    # event_params = Event.json_string_to_map(event_str)
+    IO.inspect(event_params)
     resp =
       case Events.create_event(event_params) do
         {:ok, event} ->
-          FastFilter.process_event(
-            author_pubkey: event.pubkey,
-            tags: event.tags,
-            kind: event.kind,
-            raw_event: raw_event
-          )
-
+          FastFilter.process_event(event)
           "successfully created event #{event.id}"
 
         _ ->
@@ -166,6 +151,11 @@ defmodule NostrexWeb.NostrSocket do
     {[], state}
   end
 
+  def handle_info(:event, raw_event) do
+    IO.puts "Got event"
+    IO.puts raw_event
+  end
+
   # placeholder catch all
   def handle_info(_) do
     IO.puts("called!!! pubsub")
@@ -206,10 +196,6 @@ defmodule NostrexWeb.NostrSocket do
     # if until is empty or is after now
 
   end
-
-  # defp create_subscription_ets_entries do
-    
-  # end
 
   # TODO: consider adding some larger buffer here
   defp timestamp_before_now?(unix_timestamp) do
