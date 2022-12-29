@@ -1,5 +1,6 @@
 defmodule Nostrex.FastFilter do
   alias Nostrex.Events.{Event, Filter}
+  alias Phoenix.PubSub
 
   @moduledoc """
   This module provies the tooling to utilize a KV store for Nostr-specific
@@ -94,35 +95,143 @@ defmodule Nostrex.FastFilter do
 
   def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: kind}) do
     # create base data structures for algo
-    a_filter_set = MapSet.new()
-    p_filter_set = MapSet.new()
-    e_filter_set = MapSet.new()
-    already_broadcast_sub_ids = MapSet.new()
+
+    filter_logic_state = %{
+      filter_set: MapSet.new(),
+      already_broadcast_sub_ids: MapSet.new()
+    }
+
+    # a_filter_set = MapSet.new()
+    # p_filter_set = MapSet.new()
+    # e_filter_set = MapSet.new()
+    # already_broadcast_sub_ids = MapSet.new()
 
     # lookup filters subcribed to author
     author_match_filters = :ets.lookup_element(:nostrex_ff_pubkeys, pubkey, 2)
 
-    author_match_filters
-      |> Enum.each(fn f ->
+    # author_match_filters
+    #   |> Enum.each(fn f ->
+    #     %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+    #     if code == "a" do
+    #       broadcast_event(subscription_id, event)
+    #       MapSet.put(already_broadcast_sub_ids, subscription_id)
+    #     else
+    #       MapSet.put(a_filter_set, f)
+    #     end
+    #   end)
+
+    new_state =
+      author_match_filters
+      |> Enum.reduce(filter_logic_state, fn f, state ->
         %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+
         if code == "a" do
-          broadcast_event(subscription_id, event)
-          MapSet.put(already_broadcast_sub_ids, subscription_id)
+          broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
+
+          Map.put(
+            state,
+            :already_broadcast_sub_ids,
+            MapSet.put(state[:already_broadcast_sub_ids], subscription_id)
+          )
         else
-          MapSet.put(a_filter_set, f)
+          Map.put(
+            state,
+            :filter_set,
+            MapSet.put(state[:filter_set], f)
+          )
         end
       end)
 
+    # categorize tags by type
+    p_tags = Enum.filter(tags, fn t -> t[:type] == "p" end)
+    e_tags = Enum.filter(tags, fn t -> t[:type] == "e" end)
+
+    new_state =
+      p_tags
+      |> Enum.reduce(new_state, fn t, state ->
+        # lookup filters subscribed to p tags
+        :ets.lookup_element(:nostrex_ff_ptags, t[:field_1], 2)
+        |> Enum.reduce(new_state, fn f, state ->
+          %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+
+          case code do
+            "p" ->
+              broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
+
+              Map.put(
+                state,
+                :already_broadcast_sub_ids,
+                MapSet.put(state[:already_broadcast_sub_ids], subscription_id)
+              )
+
+            # check if filter is type ap or ape and filter_set includes current filter, if so broacast
+            "ap" <> _ ->
+              if MapSet.member?(state[:filter_set], f) do
+                broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
+                MapSet.put(state[:already_broadcast_sub_ids], subscription_id)
+              else
+                # ignore filter, as there's no a match
+                state
+              end
+
+            "pe" ->
+              Map.put(
+                state,
+                :filter_set,
+                MapSet.put(state[:filter_set], f)
+              )
+          end
+        end)
+      end)
+
+    new_state =
+      e_tags
+      |> Enum.reduce(new_state, fn t, state ->
+        # lookup filters subscribed to p tags
+        :ets.lookup_element(:nostrex_ff_etags, t[:field_1], 2)
+        |> Enum.reduce(new_state, fn f, state ->
+          %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+
+          case code do
+            "e" ->
+              broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
+
+              Map.put(
+                state,
+                :already_broadcast_sub_ids,
+                MapSet.put(state[:already_broadcast_sub_ids], subscription_id)
+              )
+
+            # check if filter is type ap or ape and filter_set includes current filter, if so broacast
+            n when n in ["pe", "ape"] ->
+              if MapSet.member?(state[:filter_set], f) do
+                broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
+                MapSet.put(state[:already_broadcast_sub_ids], subscription_id)
+              else
+                # ignore filter, as there's no a match
+                state
+              end
+          end
+        end)
+      end)
 
     # tags
-    p_match_filters = :ets.lookup_element(:nostrex_ff_ptags, pubkey, 2)
+    # p_match_filters =
+    #   :ets.lookup_element(:nostrex_ff_ptags, pubkey, 2)
+    #   |>
 
+    # p_match_filters
+    # |> Enum.each(fn f ->
 
+    # end)
     # p_match_filters = :ets.lookup_element(:nostre)
   end
 
-  defp broadcast_event(subscription_id, event) do
-    PubSub.broadcast(:nostrex_pubsub, "req:#{subscription_id}", {:event, event})
+  defp broadcast_event(already_broadcast_sub_ids, subscription_id, event) do
+    # only broadcast if not already broadcast to this subscription id
+    unless MapSet.member?(already_broadcast_sub_ids, subscription_id) do
+      PubSub.broadcast(:nostrex_pubsub, "req:#{subscription_id}", {:event, event})
+    end
   end
 
   def generate_filter_id(subscription_id, filter) do
@@ -132,12 +241,12 @@ defmodule Nostrex.FastFilter do
 
   def parse_filter_id(filter_id) do
     [code, subscription_id, _] = String.split(filter_id, ":")
+
     %{
       code: code,
       subscription_id: subscription_id
     }
   end
-
 
   @doc """
   generates a fingerprint that includes non or all of the letters: a, p, e

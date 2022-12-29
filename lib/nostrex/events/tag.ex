@@ -8,7 +8,7 @@ defmodule Nostrex.Events.Tag do
     field :field_1, :string
     field :field_2, :string
     field :full_tag, {:array, :string}
-  	belongs_to :event, Event, type: :string
+    belongs_to :event, Event, type: :string
 
     timestamps()
   end

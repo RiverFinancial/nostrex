@@ -9,8 +9,27 @@ defmodule Nostrex.EventsTest do
       pubkey: "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d",
       # DateTime.utc_now(),
       tags: [
-        %{type: "e", field_1: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009", field_2: "test-relay", full_tag: ["e", "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009", "test-relay"]},
-        %{type: "p", field_1: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009", field_2: "test-relay", full_tag: ["p", "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009", "test.relay.com", "extra"]}
+        %{
+          type: "e",
+          field_1: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
+          field_2: "test-relay",
+          full_tag: [
+            "e",
+            "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
+            "test-relay"
+          ]
+        },
+        %{
+          type: "p",
+          field_1: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
+          field_2: "test-relay",
+          full_tag: [
+            "p",
+            "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
+            "test.relay.com",
+            "extra"
+          ]
+        }
       ],
       created_at: DateTime.from_unix!(1_671_994_854),
       kind: 1,

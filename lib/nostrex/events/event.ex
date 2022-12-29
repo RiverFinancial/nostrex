@@ -5,7 +5,6 @@ defmodule Nostrex.Events.Event do
 
   @primary_key {:id, :string, autogenerate: false}
 
-
   schema "events" do
     field :pubkey, :string
     field :created_at, :utc_datetime
@@ -34,12 +33,26 @@ defmodule Nostrex.Events.Event do
   @doc """
   This method is for taking an untrusted JSON string that could have unapproved inputs
   and converting it into a clean atom map to pass to Events.create_event
+
+  This also turns the tags list into a map for creating associated tags
   """
   # TODO: don't throw error when non-valid keys sent
   def json_string_to_map(event_str) do
     # key_whitelist = ["id", "pubkey", "created_at", "kind", "conetent", "sig", "tags"]
     {:ok, map} = Jason.decode(event_str, keys: :atoms!)
-    map
+
+    Map.update(map, :tags, fn val ->
+      if val == nil or val == [] do
+        val
+      else
+        # convert lits
+
+        val
+      end
+    end)
+  end
+
+  defp convert_tag_list_to_map_list(tags) do
   end
 
   # TODO, move these to the Event struct as they are very much scoped purely for validation

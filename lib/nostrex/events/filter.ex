@@ -12,6 +12,7 @@ defmodule Nostrex.Events.Filter do
     field :until, :integer
     field :limit, :integer
   end
+
   # defstruct [:ids, :authors, :kinds, :e, :p, :since, :until, :limit]
 
   @optional_attrs ~w(ids authors kinds #e #p since until limit)a
@@ -24,7 +25,8 @@ defmodule Nostrex.Events.Filter do
 
   defp validate_one_field_not_empty(changeset) do
     changes = changeset.changes
-    if Enum.empty?(changes) or Enum.any?(changes, fn {_k,v} -> is_empty?(v) end) do
+
+    if Enum.empty?(changes) or Enum.any?(changes, fn {_k, v} -> is_empty?(v) end) do
       add_error(changeset, :ids, "Filter must have one field not empty")
     else
       changeset
@@ -50,6 +52,4 @@ defmodule Nostrex.Events.Filter do
   defp is_empty?(_) do
     false
   end
-
-
 end

@@ -22,8 +22,6 @@ defmodule Nostrex.Application do
       # {Nostrex.Worker, arg}
     ]
 
-
-
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Nostrex.Supervisor]

@@ -1,5 +1,7 @@
 defmodule Nostrex.FastFilterTest do
   use Nostrex.DataCase
+
+  alias Phoenix.PubSub
   # alias Nostrex.Events
   alias Nostrex.Events.Filter
   alias Nostrex.{FastFilter, FastFilterTableManager}
@@ -29,35 +31,44 @@ defmodule Nostrex.FastFilterTest do
 
   test "generating filter code used for part of filter identifier in lookup tables" do
     valid_filters = [
-      ['{"ids":["aa","bb","cc"],"authors":["aa","bb","cc"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}', "ape"],
+      [
+        '{"ids":["aa","bb","cc"],"authors":["aa","bb","cc"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}',
+        "ape"
+      ],
       ['{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', "a"],
       ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', ""]
     ]
 
-    
     for [f, i] <- valid_filters do
       params = Jason.decode!(f, keys: :atoms)
-      id = %Filter{}
+
+      id =
+        %Filter{}
         |> Filter.changeset(params)
         |> apply_action!(:update)
         |> FastFilter.generate_filter_code()
+
       assert id == i
     end
   end
 
   test "test that filter can be added to ets" do
     valid_filters = [
-      ['{"ids":["aa","bb","cc"],"authors":["dd","ee","ff"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}', "ape"],
+      [
+        '{"ids":["aa","bb","cc"],"authors":["dd","ee","ff"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}',
+        "ape"
+      ],
       ['{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', "a"],
       ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', ""]
     ]
 
     for [f, _] <- valid_filters do
       params = Jason.decode!(f, keys: :atoms)
-      filter = %Filter{}
+
+      filter =
+        %Filter{}
         |> Filter.changeset(params)
         |> apply_action!(:update)
-
 
       FastFilter.insert_filter(filter, "testsubscriptionid")
     end
@@ -68,12 +79,19 @@ defmodule Nostrex.FastFilterTest do
     assert String.starts_with?(first_filter_pubkey_value, "ape:testsubscriptionid:")
 
     # second_filter_result = :ets.lookup(:nostrex_ff_pubkeys, "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d")
-    
-    # assert String.starts_with?(elem([0], 1), "ape:testsubscriptionid:")
 
+    # assert String.starts_with?(elem([0], 1), "ape:testsubscriptionid:")
 
     # assert String.starts_with?(elem(:ets.lookup(:nostrex_ff_pubkeys, "ee")[0], 1), "ape:testsubscriptionid:")
     # assert String.starts_with?(elem(:ets.lookup(:nostrex_ff_pubkeys, "ff")[0], 1), "ape:testsubscriptionid:")
+  end
+
+  test "process_event" do
+    # register to subscription id
+
+    # create basic filter
+
+    # process event that should match filter and test that event is received
   end
 
   test "parsing filter_id" do
@@ -82,8 +100,6 @@ defmodule Nostrex.FastFilterTest do
     assert res.subscription_id == "sdfsdfsd"
   end
 
-
   test "test that filter can be deleted" do
-    
   end
 end

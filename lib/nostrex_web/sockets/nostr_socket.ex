@@ -34,7 +34,7 @@ defmodule NostrexWeb.NostrSocket do
   # We'll look at how to do that in the `websocket_handle` function however.
   # This function is where you might want to  implement `Phoenix.Presence`, schedule an `after_join` message etc.
   @impl :cowboy_websocket
-  def websocket_init(state) do
+  def websocket_init(_state) do
     IO.puts("INIT SERVER")
 
     initial_state = %{
@@ -43,7 +43,7 @@ defmodule NostrexWeb.NostrSocket do
       subscriptions: MapSet.new()
     }
 
-    {[], state}
+    {[], initial_state}
   end
 
   # `websocket_handle` is where data from a client will be received.
@@ -68,9 +68,10 @@ defmodule NostrexWeb.NostrSocket do
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events
   def websocket_handle({:text, req = "[\"EVENT\"," <> _}, state) do
-    event_params = MessageParser.parse_and_sanity_check_event(req)
+    event_params = MessageParser.parse_and_sanity_check_event_message(req)
 
     IO.inspect(event_params)
+
     resp =
       case Events.create_event(event_params) do
         {:ok, event} ->
@@ -152,8 +153,8 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   def handle_info(:event, raw_event) do
-    IO.puts "Got event"
-    IO.puts raw_event
+    IO.puts("Got event")
+    IO.puts(raw_event)
   end
 
   # placeholder catch all
@@ -193,12 +194,12 @@ defmodule NostrexWeb.NostrSocket do
         FastFilter.insert_filter(filter, subscription_id)
       end
     end
-    # if until is empty or is after now
 
+    # if until is empty or is after now
   end
 
   # TODO: consider adding some larger buffer here
   defp timestamp_before_now?(unix_timestamp) do
-    DateTime.compare(DateTime.from_unix(unix_timestamp), DateTime.now()) == :lt
+    DateTime.compare(DateTime.from_unix(unix_timestamp), DateTime.utc_now()) == :lt
   end
 end
