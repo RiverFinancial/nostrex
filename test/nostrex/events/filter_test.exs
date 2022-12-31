@@ -7,6 +7,7 @@ defmodule Nostrex.FilterTest do
       '{"ids":["aa","bb","cc"],"authors":["aa","bb","cc"],"kinds":[0,1,2,3],"since":1000,"until":1000,"limit":100,"#e":["aa","bb","cc"],"#p":["dd","ee","ff"],"#r":["00","11","22"]}',
       true
     ],
+    ['{"#e": ["ekey_1", "ekey_2", "ekey_3"]}', true],
     ['{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', true],
     ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', true],
     # although we may want to block such large sweeping reqs

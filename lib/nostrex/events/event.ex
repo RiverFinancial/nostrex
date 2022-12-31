@@ -30,30 +30,38 @@ defmodule Nostrex.Events.Event do
     |> unique_constraint(:id, name: "events_pkey")
   end
 
-  @doc """
-  This method is for taking an untrusted JSON string that could have unapproved inputs
-  and converting it into a clean atom map to pass to Events.create_event
+  # Only to be used by tests
+  def test_only_changeset_no_validation(event, attrs) do
+    event
+    |> cast(attrs, @required_attrs)
+    |> cast_assoc(:tags, with: &Tag.changeset/2)
+    |> validate_required(@required_attrs)
+  end
 
-  This also turns the tags list into a map for creating associated tags
-  """
+  # @doc """
+  # This method is for taking an untrusted JSON string that could have unapproved inputs
+  # and converting it into a clean atom map to pass to Events.create_event
+
+  # This also turns the tags list into a map for creating associated tags
+  # """
   # TODO: don't throw error when non-valid keys sent
-  def json_string_to_map(event_str) do
-    # key_whitelist = ["id", "pubkey", "created_at", "kind", "conetent", "sig", "tags"]
-    {:ok, map} = Jason.decode(event_str, keys: :atoms!)
+  # def json_string_to_map(event_str) do
+  #   # key_whitelist = ["id", "pubkey", "created_at", "kind", "conetent", "sig", "tags"]
+  #   {:ok, map} = Jason.decode(event_str, keys: :atoms!)
 
-    Map.update(map, :tags, fn val ->
-      if val == nil or val == [] do
-        val
-      else
-        # convert lits
+  #   Map.update(map, :tags, fn val ->
+  #     if val == nil or val == [] do
+  #       val
+  #     else
+  #       # convert lits
 
-        val
-      end
-    end)
-  end
+  #       val
+  #     end
+  #   end)
+  # end
 
-  defp convert_tag_list_to_map_list(tags) do
-  end
+  # defp convert_tag_list_to_map_list(tags) do
+  # end
 
   # TODO, move these to the Event struct as they are very much scoped purely for validation
 
@@ -86,12 +94,12 @@ defmodule Nostrex.Events.Event do
   end
 
   # TODO
-  defp validate(event) do
-    # validate event ID
-    # validate signature
-  end
+  # defp validate(event) do
+  # validate event ID
+  # validate signature
+  # end
 
   # TODO
-  defp validate_signature(pubkey, event_id, sig) do
-  end
+  # defp validate_signature(pubkey, event_id, sig) do
+  # end
 end

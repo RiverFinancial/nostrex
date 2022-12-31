@@ -3,7 +3,7 @@ defmodule Nostrex.FastFilter do
   alias Phoenix.PubSub
 
   @moduledoc """
-  This module provies the tooling to utilize a KV store for Nostr-specific
+  This module provides the tooling and algorithm to utilize a KV store for Nostr-specific
   fast lookups to power efficent event broadcasting to subscribers. The current
   implementation is hardcoded to ETS, but this may change down the road. This tooling
   is only used for routing *future* events, not querying past events to return to a single
@@ -11,7 +11,7 @@ defmodule Nostrex.FastFilter do
 
   The benefit of ETS is that it is built in, simple and fast. The downside is that
   it is not persistent across deploys, but based on our understanding of NIP-1 this
-  shouldn't be an issue because filters should die when socket connections die and 
+  shouldn't be an issue because filters should die when socket connections die and
   socket connections die on redeploys.
 
   The data model implemented here is a doubly-linked hashtable with the following sructure
@@ -54,8 +54,8 @@ defmodule Nostrex.FastFilter do
   for the referenced authors in the p tags
   	get filter_ids from p_filters_table for every pubkey referenced
   		for each filter_id
-  			if filter_fingerprint == 'p' 
-  				if sub_id not in already_broadcast_sub_id 
+  			if filter_fingerprint == 'p'
+  				if sub_id not in already_broadcast_sub_id
   					broadcast to filter subscription id and add sub_id to already_broadcast_sub_id
   			else
   				add fingerprint to filter_set if doesn't include an 'a' in the fingerprint
@@ -93,11 +93,13 @@ defmodule Nostrex.FastFilter do
   def delete_filter() do
   end
 
-  def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: kind}) do
+  def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: _kind}) do
     # create base data structures for algo
 
     filter_logic_state = %{
-      filter_set: MapSet.new(),
+      a_filter_set: MapSet.new(),
+      p_filter_set: MapSet.new(),
+      e_filter_set: MapSet.new(),
       already_broadcast_sub_ids: MapSet.new()
     }
 
@@ -114,8 +116,8 @@ defmodule Nostrex.FastFilter do
         else
           Map.put(
             state,
-            :filter_set,
-            MapSet.put(state[:filter_set], f)
+            :a_filter_set,
+            MapSet.put(state[:a_filter_set], f)
           )
         end
       end)
@@ -130,7 +132,7 @@ defmodule Nostrex.FastFilter do
         # lookup filters subscribed to p tags
 
         ets_lookup(:nostrex_ff_ptags, t.field_1)
-        |> Enum.reduce(new_state, fn f, state ->
+        |> Enum.reduce(state, fn f, state ->
           %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
 
           case code do
@@ -138,47 +140,63 @@ defmodule Nostrex.FastFilter do
               broadcast_and_update_state(state, event, subscription_id)
 
             # check if filter is type ap or ape and filter_set includes current filter, if so broacast
-            "ap" <> _ ->
-              if MapSet.member?(state[:filter_set], f) do
+            "ap" ->
+              if MapSet.member?(state[:a_filter_set], f) do
                 broadcast_and_update_state(state, event, subscription_id)
               else
-                # ignore filter, as there's no a match
-                state
+                Map.put(
+                  state,
+                  :p_filter_set,
+                  MapSet.put(state[:p_filter_set], f)
+                )
               end
 
-            "pe" ->
+            n when n in ["pe", "ape"] ->
               Map.put(
                 state,
-                :filter_set,
-                MapSet.put(state[:filter_set], f)
+                :p_filter_set,
+                MapSet.put(state[:p_filter_set], f)
               )
           end
         end)
       end)
 
-    new_state =
-      e_tags
-      |> Enum.reduce(new_state, fn t, state ->
-        # lookup filters subscribed to p tags
-        ets_lookup(:nostrex_ff_etags, t.field_1)
-        |> Enum.reduce(new_state, fn f, state ->
-          %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
+    # returns new state after iterating through e_tags (should still work if list empty)
+    e_tags
+    |> Enum.reduce(new_state, fn t, state ->
+      # lookup filters subscribed to p tags
+      ets_lookup(:nostrex_ff_etags, t.field_1)
+      |> Enum.reduce(state, fn f, state ->
+        %{code: code, subscription_id: subscription_id} = parse_filter_id(f)
 
-          case code do
-            "e" ->
+        case code do
+          "e" ->
+            broadcast_and_update_state(state, event, subscription_id)
+
+          "ae" ->
+            if MapSet.member?(state[:a_filter_set], f) do
               broadcast_and_update_state(state, event, subscription_id)
+            else
+              state
+            end
 
-            # check if filter is type pe or ape and filter_set includes current filter, if so broacast
-            n when n in ["pe", "ape"] ->
-              if MapSet.member?(state[:filter_set], f) do
-                broadcast_and_update_state(state, event, subscription_id)
-              else
-                # ignore filter, as there's no a match
-                state
-              end
-          end
-        end)
+          "pe" ->
+            if MapSet.member?(state[:p_filter_set], f) do
+              broadcast_and_update_state(state, event, subscription_id)
+            else
+              state
+            end
+
+          "ape" ->
+            if MapSet.member?(state[:a_filter_set], f) and MapSet.member?(state[:p_filter_set], f) do
+              broadcast_and_update_state(state, event, subscription_id)
+            else
+              # ignore filter, as there's no a match
+              state
+            end
+        end
       end)
+    end)
   end
 
   def generate_filter_id(subscription_id, filter) do
