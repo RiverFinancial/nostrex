@@ -187,7 +187,7 @@ defmodule NostrexWeb.NostrSocket do
   defp handle_req_event(subscription_id, filters) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
-    PubSub.subscribe(:nostrex_pubsub, "req:#{subscription_id}")
+    PubSub.subscribe(:nostrex_pubsub, "req-{subscription_id}")
 
     for filter <- filters do
       if filter[:until] == nil or !timestamp_before_now?(filters[:until]) do
