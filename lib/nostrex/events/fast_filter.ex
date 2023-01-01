@@ -123,6 +123,9 @@ defmodule Nostrex.FastFilter do
     ets_delete(:nostrex_ff_pubkeys, filter_id, filter.authors)
     ets_delete(:nostrex_ff_ptags, filter_id, filter."#p")
     ets_delete(:nostrex_ff_etags, filter_id, filter."#e")
+
+    # delete kind entries
+    :ets.delete(:nostrex_ff_kinds, filter_id)
   end
 
   def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: _kind}) do
