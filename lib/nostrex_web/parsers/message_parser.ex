@@ -10,7 +10,9 @@ defmodule NostrexWeb.MessageParser do
     {:ok, list} = Jason.decode(req, keys: :atoms)
     event_params = Enum.at(list, 1)
 
-    Map.update(event_params, :tags, [], fn tags ->
+    event_params
+    |> Map.update!(:created_at, &DateTime.from_unix!(&1))
+    |> Map.update(:tags, [], fn tags ->
       if tags == nil or tags == [] do
         []
       else
