@@ -182,6 +182,10 @@ defmodule NostrexWeb.NostrSocket do
     put_in(state, [key], state[key] + 1)
   end
 
+  defp handle_req_event(state, _subscription_id, filters) when filters == [] do
+    state
+  end
+
   defp handle_req_event(state, subscription_id, filters) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
@@ -197,7 +201,7 @@ defmodule NostrexWeb.NostrSocket do
       |> Events.create_filter()
     end)
     |> Enum.reduce(state, fn filter, state ->
-      if filter.until == nil or !timestamp_before_now?(filters.until) do
+      if filter.until == nil or !timestamp_before_now?(filter.until) do
         filter
         |> FastFilter.insert_filter()
 
@@ -219,6 +223,6 @@ defmodule NostrexWeb.NostrSocket do
 
   # TODO: consider adding some larger buffer here
   defp timestamp_before_now?(unix_timestamp) do
-    DateTime.compare(DateTime.from_unix(unix_timestamp), DateTime.utc_now()) == :lt
+    DateTime.compare(DateTime.from_unix!(unix_timestamp), DateTime.utc_now()) == :lt
   end
 end

@@ -43,7 +43,9 @@ defmodule NostrexWeb.NostrSocketTest do
       subscriptions: %{}
     }
 
-    req_msg = ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}]'
+    future_time = (DateTime.utc_now() |> DateTime.to_unix()) + 1000
+    past_time = (DateTime.utc_now() |> DateTime.to_unix()) - 2000
+    req_msg = ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"], "until": #{future_time}}, {"authors": ["auth2"], "until": #{past_time}}]'
 
     assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
 
@@ -51,6 +53,7 @@ defmodule NostrexWeb.NostrSocketTest do
 
     assert resp =~ "success"
 
+    # assert filter with until time in the past doesn't get added to fast filter
     assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 1
 
     refute Enum.empty?(new_state.subscriptions)
