@@ -3,7 +3,7 @@ defmodule Nostrex.Repo.Migrations.AddTagsTable do
 
   def change do
     create table(:tags) do
-      add :event_id, references(:events, type: :bytea)
+      add :event_id, references(:events, type: :string)
       add :type, :string
       add :field_1, :string
       add :field_2, :string

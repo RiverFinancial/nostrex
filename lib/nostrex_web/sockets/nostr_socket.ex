@@ -1,8 +1,9 @@
 defmodule NostrexWeb.NostrSocket do
   # NOT USING Phoenix.Socket because it requires a proprietary wire protocol that is incompatible with Nostr
+  require Logger
 
   alias Nostrex.Events
-  alias Nostrex.Events.{Event, Tag}
+  alias Nostrex.Events.Event
   alias Phoenix.PubSub
   alias Nostrex.FastFilter
   alias NostrexWeb.MessageParser
@@ -13,17 +14,17 @@ defmodule NostrexWeb.NostrSocket do
 
   @behaviour :cowboy_websocket
 
-  # entry point of the websocket socket. 
+  # entry point of the websocket socket.
   # WARNING: this is where you would need to do any authentication
   #          and authorization. Since this handler is invoked BEFORE
   #          our Phoenix router, it will NOT follow your pipelines defined there.
-  # 
+  #
   # WARNING: this function is NOT called in the same process context as the rest of the functions
-  #          defined in this module. This is notably dissimilar to other gen_* behaviours.  
-  # Phoenix.PubSub.broadcast(:nostrex_pubsub, "test", %{a: 1})       
+  #          defined in this module. This is notably dissimilar to other gen_* behaviours.
+  # Phoenix.PubSub.broadcast(:nostrex_pubsub, "test", %{a: 1})
   @impl :cowboy_websocket
   def init(req, opts) do
-    IO.inspect(opts)
+    Logger.info("Starting cowboy websocket server")
     # TODO: look at limiting max frame size here
     # NOTE: idle timeout default is 60s to save resources
     {:cowboy_websocket, req, opts}
@@ -34,13 +35,13 @@ defmodule NostrexWeb.NostrSocket do
   # We'll look at how to do that in the `websocket_handle` function however.
   # This function is where you might want to  implement `Phoenix.Presence`, schedule an `after_join` message etc.
   @impl :cowboy_websocket
-  def websocket_init(_state) do
-    IO.puts("INIT SERVER")
+  def websocket_init(state) do
+    Logger.info("Websocket init state: #{state}")
 
     initial_state = %{
       event_count: 0,
       req_count: 0,
-      subscriptions: MapSet.new()
+      subscriptions: %{}
     }
 
     {[], initial_state}
@@ -48,29 +49,33 @@ defmodule NostrexWeb.NostrSocket do
 
   # `websocket_handle` is where data from a client will be received.
   # a `frame` will be delivered in one of a few shapes depending on what the client sent:
-  # 
+  #
   #     :ping
   #     :pong
   #     {:text, data}
   #     {:binary, data}
-  # 
+  #
   # Similarly, the return value of this function is similar:
-  # 
+  #
   #     {[reply_frame1, reply_frame2, ....], state}
-  # 
+  #
   # where `reply_frame` is the same format as what is delivered.
   @impl :cowboy_websocket
   def websocket_handle(frame, state)
 
   # Implement basic ping pong handler for easy health checking
-  def websocket_handle({:text, "ping"}, state), do: {[{:text, "pong"}], state}
+  def websocket_handle({:text, "ping"}, state) do
+    Logger.info("Ping endpoint hit")
+    {[{:text, "pong"}], state}
+  end
 
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events
   def websocket_handle({:text, req = "[\"EVENT\"," <> _}, state) do
+    Logger.info("Inbound EVENT message: #{req}")
     event_params = MessageParser.parse_and_sanity_check_event_message(req)
 
-    IO.inspect(event_params)
+    Logger.info("Creating event with params #{inspect(event_params)}")
 
     resp =
       case Events.create_event(event_params) do
@@ -78,7 +83,8 @@ defmodule NostrexWeb.NostrSocket do
           FastFilter.process_event(event)
           "successfully created event #{event.id}"
 
-        _ ->
+        {:error, errors} ->
+          Logger.error("failed to save event #{inspect(errors)}")
           "error: unable to save event"
       end
 
@@ -91,43 +97,32 @@ defmodule NostrexWeb.NostrSocket do
   to query and subscribe to events based on a filter
   """
   def websocket_handle({:text, req = "[\"REQ\"," <> _}, state) do
-    IO.puts("REQ endpoint hit")
-    IO.inspect(state)
+    Logger.info("Inbound REQ message: #{req}")
 
     {:ok, list} = Jason.decode(req, keys: :atoms)
-    subscription_id = Enum.at(list, 1)
-    filters = Enum.at(list, 2)
-
+    [_, subscription_id | filters] = list
     # TODO, ensure subscription_id doesn't have colon since we use as separator in filter_id
-
-    handle_req_event(subscription_id, filters)
-
-    state =
-      state
-      |> increment_state_counter(:event_count)
-      |> increment_state_counter(:req_count)
-      |> add_subscription_to_state(subscription_id)
-
-    IO.inspect(filters)
+    state
+    |> handle_req_event(subscription_id, filters)
+    |> increment_state_counter(:event_count)
+    |> increment_state_counter(:req_count)
 
     {[{:text, "success"}], state}
   end
 
-  @doc """
-  Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
-  and also grows the in-memory PubSub state. This message includes a subscription
-  id, but we need to be sure we're only closing the subscription ids that belong to this
-  channel, otherwise we open ourselves up to somebody spamming in an attempt to close 
-  subscriptions for other clients
-  """
+  # Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
+  # and also grows the in-memory PubSub state. This message includes a subscription
+  # id, but we need to be sure we're only closing the subscription ids that belong to this
+  # channel, otherwise we open ourselves up to somebody spamming in an attempt to close
+  # subscriptions for other clients
   def websocket_handle({:text, req = "[\"CLOSE\"," <> _}, state) do
-    IO.puts("[CLOSE] endpoint hit")
+    Logger.info("Inbound Close message #{req}")
 
     {:ok, list} = Jason.decode(req)
 
-    # TODO, ensure subscription ID isn't too large
+    # TODO, validate subscription ID
     subscription_id = Enum.at(list, 1)
-    IO.puts(subscription_id)
+    remove_subscription(state, subscription_id)
 
     {[{:close, "success"}], state}
   end
@@ -143,30 +138,39 @@ defmodule NostrexWeb.NostrSocket do
   @impl :cowboy_websocket
   def websocket_info(info, state)
 
-  def websocket_info(info, state) do
-    IO.puts("INFO RECEIVED!!")
-    IO.inspect(info)
-    msgs = Process.info(self(), :messages)
-    IO.puts("msgs")
-    IO.inspect(msgs)
-    {[], state}
+  def websocket_info({:event, event = %Event{}}, state) do
+    Logger.info("Sending event #{event.id} to subscriber")
+    event_json = MessageParser.event_to_json(event)
+    {[{:text, event_json}], state}
   end
 
-  def handle_info(:event, raw_event) do
-    IO.puts("Got event")
-    IO.puts(raw_event)
+  def websocket_info(info, state) do
+    msgs = Process.info(self(), :messages)
+
+    Logger.info("""
+    default websocket event handler (shouldn't be called)
+    #{inspect(info)}
+    #{inspect(state)}
+    #{inspect(msgs)}
+    """)
+
+    {[{:text, "handling shouldn't be called"}], state}
   end
 
   # placeholder catch all
   def handle_info(_) do
-    IO.puts("called!!! pubsub")
+    Logger.info("Catch-all handle_info called")
   end
 
   @impl true
   def terminate(_reason, _partial_req, state) do
     ## Ensure any state gets cleaned up before terminating
-    IO.puts("TERMINATE CALLED")
-    IO.inspect(state)
+    state.subscriptions
+    |> Enum.each(fn sub_id, _ ->
+      remove_subscription(state, sub_id)
+    end)
+
+    Logger.info("Websocket terminate called with state: #{inspect(state)}")
     :ok
   end
 
@@ -175,27 +179,36 @@ defmodule NostrexWeb.NostrSocket do
     put_in(state, [key], state[key] + 1)
   end
 
-  # adds a new subscription to the state object subscriptions set
-  defp add_subscription_to_state(state, subscription) do
-    new_subscriptions =
-      state.subscriptions
-      |> MapSet.put(subscription)
-
-    put_in(state, [:subscriptions], new_subscriptions)
-  end
-
-  defp handle_req_event(subscription_id, filters) do
+  defp handle_req_event(state, subscription_id, filters) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
-    PubSub.subscribe(:nostrex_pubsub, "req-{subscription_id}")
+    PubSub.subscribe(:nostrex_pubsub, subscription_id)
 
-    for filter <- filters do
-      if filter[:until] == nil or !timestamp_before_now?(filters[:until]) do
-        FastFilter.insert_filter(filter, subscription_id)
+    # TODO check subscription doesn't already exist
+    state = put_in(state, [:subscriptions, subscription_id], MapSet.new())
+
+    filters
+    |> Enum.map(fn params ->
+      Events.create_filter(params)
+    end)
+    |> Enum.reduce(state, fn filter, state ->
+      if filter.until == nil or !timestamp_before_now?(filters.until) do
+        filter
+        |> FastFilter.insert_filter(subscription_id)
+
+        update_in(state, [:subscriptions, subscription_id], &MapSet.put(&1, filter))
+      else
+        state
       end
-    end
+    end)
+  end
 
-    # if until is empty or is after now
+  defp remove_subscription(state, subscription_id) do
+    Enum.each(state.subscriptions[subscription_id], fn filter ->
+      FastFilter.delete_filter(subscription_id, filter)
+    end)
+
+    update_in(state.subscriptions, &Map.delete(&1, subscription_id))
   end
 
   # TODO: consider adding some larger buffer here

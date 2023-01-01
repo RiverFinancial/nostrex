@@ -1,6 +1,9 @@
 defmodule NostrexWeb.NostrSocketTest do
   use NostrexWeb.ConnCase
 
+  test "ping pong" do
+  end
+
   describe "EVENT message functionality" do
     # Import the `Cowboy.WebsocketTest` module
 

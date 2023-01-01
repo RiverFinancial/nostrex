@@ -1,4 +1,6 @@
 defmodule NostrexWeb.MessageParser do
+  alias Nostrex.Events.Event
+
   @doc """
   parse and do some basic validation on event message and return
   params ready to be sent to Events.create_event/1
@@ -7,11 +9,10 @@ defmodule NostrexWeb.MessageParser do
     # TODO: change this to not lead to dos vuln
     {:ok, list} = Jason.decode(req, keys: :atoms)
     event_params = Enum.at(list, 1)
-    {:ok, raw_event} = Jason.encode(event_params)
 
-    Map.update(event_params, :tags, nil, fn tags ->
+    Map.update(event_params, :tags, [], fn tags ->
       if tags == nil or tags == [] do
-        tags
+        []
       else
         # convert tag list to map list for embedded object creation
 
@@ -23,10 +24,30 @@ defmodule NostrexWeb.MessageParser do
     end)
   end
 
+  def event_to_json(event = %Event{}) do
+    map = %{
+      "id" => event.id,
+      "pubkey" => event.pubkey,
+      "created_at" => DateTime.to_unix(event.created_at),
+      "kind" => event.kind,
+      "content" => event.content,
+      "sig" => event.sig
+    }
+
+    map =
+      if event.tags do
+        Map.put(map, "tags", Enum.map(event.tags, fn tag -> tag.full_tag end))
+      else
+        map
+      end
+
+    Jason.encode!(map)
+  end
+
   defp list_to_tag_params(list) do
     [type, field_1, field_2 | _] = list
 
-    attrs = %{
+    %{
       type: type,
       field_1: field_1,
       field_2: field_2,

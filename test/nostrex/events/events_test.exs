@@ -63,6 +63,12 @@ defmodule Nostrex.EventsTest do
     {:error, _} = Events.create_event(event_params)
   end
 
+  test "can create event without tags attribute" do
+    event_params = sample_event_params()
+    new_params = Map.delete(event_params, :tags)
+    {:ok, _event} = Events.create_event(new_params)
+  end
+
   test "ensure validation of proper field lengths and formatting" do
   end
 

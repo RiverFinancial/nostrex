@@ -1,6 +1,7 @@
 defmodule Nostrex.Events do
   alias Nostrex.Repo
-  alias Nostrex.Events.Event
+  alias Nostrex.Events.{Event, Filter}
+  import Ecto.Changeset
 
   def create_event(params) do
     %Event{}
@@ -16,5 +17,12 @@ defmodule Nostrex.Events do
     %Event{}
     |> Event.test_only_changeset_no_validation(params)
     |> Repo.insert()
+  end
+
+  # Only creating filter object in mem. No db calls
+  def create_filter(params) do
+    %Filter{}
+    |> Filter.changeset(params)
+    |> apply_action!(:update)
   end
 end

@@ -1,6 +1,7 @@
 defmodule Nostrex.FastFilter do
   alias Nostrex.Events.{Event, Filter}
   alias Phoenix.PubSub
+  require Logger
 
   @moduledoc """
   This module provides the tooling and algorithm to utilize a KV store for Nostr-specific
@@ -74,6 +75,9 @@ defmodule Nostrex.FastFilter do
   def insert_filter(filter = %Filter{}, subscription_id) do
     filter_id = generate_filter_id(subscription_id, filter)
 
+    Logger.info("Inserting filter with id #{filter_id} for subscription #{subscription_id}")
+
+    # setup content identifier (author, e tag, ptag) -> filter_id tables
     ets_insert(:nostrex_ff_pubkeys, filter_id, filter.authors)
     ets_insert(:nostrex_ff_ptags, filter_id, filter."#p")
     ets_insert(:nostrex_ff_etags, filter_id, filter."#e")
@@ -90,7 +94,24 @@ defmodule Nostrex.FastFilter do
     true
   end
 
-  def delete_filter() do
+  defp ets_delete(table_name, filter_id, keys) when is_list(keys) do
+    for key <- keys do
+      # does not throw error if key or object doesn't exist
+      :ets.delete_object(table_name, {key, filter_id})
+    end
+  end
+
+  defp ets_delete(_, _, _) do
+    true
+  end
+
+  def delete_filter(subscription_id, filter) do
+    filter_id = generate_filter_id(subscription_id, filter)
+
+    # TODO: improve efficiency by only deleting from necessary table
+    ets_delete(:nostrex_ff_pubkeys, filter_id, filter.authors)
+    ets_delete(:nostrex_ff_ptags, filter_id, filter."#p")
+    ets_delete(:nostrex_ff_etags, filter_id, filter."#e")
   end
 
   def process_event(event = %Event{pubkey: pubkey, tags: tags, kind: _kind}) do
@@ -201,7 +222,9 @@ defmodule Nostrex.FastFilter do
 
   def generate_filter_id(subscription_id, filter) do
     code = generate_filter_code(filter)
-    "#{code}:#{subscription_id}:#{:rand.uniform(99)}"
+
+    # https://www.erlang.org/doc/man/erlang.html#phash2-2
+    "#{code}:#{subscription_id}:#{:erlang.phash2(filter)}"
   end
 
   def parse_filter_id(filter_id) do
@@ -238,6 +261,7 @@ defmodule Nostrex.FastFilter do
   end
 
   defp broadcast_and_update_state(state, event = %Event{}, subscription_id) do
+    Logger.info("Broadcasting event to subscription ID #{subscription_id}")
     broadcast_event(state[:already_broadcast_sub_ids], subscription_id, event)
 
     Map.put(
@@ -250,7 +274,6 @@ defmodule Nostrex.FastFilter do
   defp broadcast_event(already_broadcast_sub_ids, subscription_id, event) do
     # only broadcast if not already broadcast to this subscription id
     unless MapSet.member?(already_broadcast_sub_ids, subscription_id) do
-      # IO.puts "BROADCASTING to #{subscription_id}"
       PubSub.broadcast(:nostrex_pubsub, subscription_id, {:event, event})
     end
   end

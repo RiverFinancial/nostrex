@@ -7,6 +7,15 @@ defmodule Nostrex.FastFilterTest do
   alias Nostrex.{FastFilter, FastFilterTableManager}
   require IEx
 
+  setup do
+    # cleanup all ETS tables
+    for table <- Nostrex.FastFilterTableManager.ets_tables() do
+      :ets.delete_all_objects(table)
+    end
+
+    :ok
+  end
+
   defp sample_event_params() do
     %{
       id: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
@@ -103,7 +112,7 @@ defmodule Nostrex.FastFilterTest do
     first_filter_pubkey_tuple = :ets.lookup(:nostrex_ff_pubkeys, "dd")
     first_filter_pubkey_value = elem(List.first(first_filter_pubkey_tuple), 1)
     assert Enum.count(first_filter_pubkey_tuple) == 1
-    assert String.starts_with?(first_filter_pubkey_value, "ape:testsubscriptionid:")
+    assert String.starts_with?(first_filter_pubkey_value, "ape:testsubscriptionid")
 
     # second_filter_result = :ets.lookup(:nostrex_ff_pubkeys, "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d")
 
@@ -160,10 +169,6 @@ defmodule Nostrex.FastFilterTest do
 
       filter
       |> FastFilter.insert_filter(sub_id)
-
-      # IO.puts "FILTER CODE"
-      # IO.puts FastFilter.generate_filter_code(filter)
-      # IO.inspect filter
     end
 
     test_events_1 = [
@@ -203,8 +208,49 @@ defmodule Nostrex.FastFilterTest do
     end
   end
 
+  test "filter can be properly deleted" do
+    filter_set = [
+      '{"authors":["akey_1"]}',
+      '{"#e": ["ekey_1", "ekey_2", "ekey_3"]}'
+    ]
+
+    filter_object_set =
+      filter_set
+      |> Enum.map(fn f -> create_filter_from_string(f) end)
+
+    # setup subscription
+    sub_1_id = "123"
+
+    for f <- filter_set do
+      filter = create_filter_from_string(f)
+
+      filter
+      |> FastFilter.insert_filter(sub_1_id)
+    end
+
+    sub_2_id = "456"
+
+    for f <- filter_set do
+      filter = create_filter_from_string(f)
+
+      filter
+      |> FastFilter.insert_filter(sub_2_id)
+    end
+
+    assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 6
+
+    FastFilter.delete_filter(sub_1_id, Enum.at(filter_object_set, 1))
+    assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 3
+
+    # test that deleting the same filter doesn't raise
+    FastFilter.delete_filter(sub_1_id, Enum.at(filter_object_set, 1))
+
+    FastFilter.delete_filter(sub_2_id, Enum.at(filter_object_set, 0))
+    assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 1
+  end
+
   test "parsing filter_id" do
-    res = FastFilter.parse_filter_id("ap:sdfsdfsd:123")
+    res = FastFilter.parse_filter_id("ap:sdfsdfsd:23")
     assert res.code == "ap"
     assert res.subscription_id == "sdfsdfsd"
   end
