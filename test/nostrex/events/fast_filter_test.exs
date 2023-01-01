@@ -76,12 +76,7 @@ defmodule Nostrex.FastFilterTest do
     ]
 
     for [f, i] <- valid_filters do
-      params = Jason.decode!(f, keys: :atoms)
-
-      id =
-        %Filter{}
-        |> Filter.changeset(params)
-        |> apply_action!(:update)
+      id = create_filter_from_string(f)
         |> FastFilter.generate_filter_code()
 
       assert id == i
@@ -95,28 +90,24 @@ defmodule Nostrex.FastFilterTest do
         "ape"
       ],
       ['{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', "a"],
-      ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', ""]
+      ['{"ids":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}', ""],
+      ['{"kinds":[1, 2, 3]}', ""]
     ]
 
     for [f, _] <- valid_filters do
-      params = Jason.decode!(f, keys: :atoms)
-
-      filter =
-        %Filter{}
-        |> Filter.changeset(params)
-        |> apply_action!(:update)
-
-      FastFilter.insert_filter(filter, "testsubscriptionid")
+      create_filter_from_string(f, "testsubscriptionid")
+      |> FastFilter.insert_filter()
     end
 
     first_filter_pubkey_tuple = :ets.lookup(:nostrex_ff_pubkeys, "dd")
     first_filter_pubkey_value = elem(List.first(first_filter_pubkey_tuple), 1)
     assert Enum.count(first_filter_pubkey_tuple) == 1
+
     assert String.starts_with?(first_filter_pubkey_value, "ape:testsubscriptionid")
 
-    # second_filter_result = :ets.lookup(:nostrex_ff_pubkeys, "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d")
+    second_filter_result = :ets.lookup(:nostrex_ff_pubkeys, "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d")
 
-    # assert String.starts_with?(elem([0], 1), "ape:testsubscriptionid:")
+    assert String.starts_with?(elem(List.first(second_filter_result), 1), "a:testsubscriptionid:")
 
     # assert String.starts_with?(elem(:ets.lookup(:nostrex_ff_pubkeys, "ee")[0], 1), "ape:testsubscriptionid:")
     # assert String.starts_with?(elem(:ets.lookup(:nostrex_ff_pubkeys, "ff")[0], 1), "ape:testsubscriptionid:")
@@ -127,16 +118,15 @@ defmodule Nostrex.FastFilterTest do
 
   test "basic process_event" do
     # subscribe to subscription id
-    sub_id = "req1234"
-    PubSub.subscribe(:nostrex_pubsub, sub_id)
 
     # create basic filter and insert
     filter_string =
       '{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}'
 
     filter = create_filter_from_string(filter_string)
+    PubSub.subscribe(:nostrex_pubsub, filter.subscription_id)
 
-    FastFilter.insert_filter(filter, sub_id)
+    FastFilter.insert_filter(filter)
 
     # process event that should match filter and test that event is received
 
@@ -157,7 +147,8 @@ defmodule Nostrex.FastFilterTest do
       '{"authors":["akey_3"]}',
       '{"#e": ["ekey_4"], "#p": ["pkey_4"]}',
       '{"authors": ["akey_5"], "#e": ["ekey_5"], "#p": ["pkey_5"]}',
-      '{"authors":["akey_6"], "#e": ["ekey_6"]}'
+      '{"authors":["akey_6"], "#e": ["ekey_6"]}',
+      '{"authors":["akey_7"], "#e": ["ekey_7"], "kinds": [1,2,3]}',
     ]
 
     # setup subscription
@@ -165,31 +156,33 @@ defmodule Nostrex.FastFilterTest do
     PubSub.subscribe(:nostrex_pubsub, sub_id)
 
     for f <- filter_set_1 do
-      filter = create_filter_from_string(f)
+      filter = create_filter_from_string(f, sub_id)
 
       filter
-      |> FastFilter.insert_filter(sub_id)
+      |> FastFilter.insert_filter()
     end
 
     test_events_1 = [
-      {[a: "akey_1", p: [], e: []], true},
-      {[a: "akey_2", p: [], e: []], false},
-      {[a: "akey_1", p: ["pkey_1"], e: []], true},
-      {[a: "akey_1", p: [], e: ["ekey_1"]], true},
+      {[a: "akey_1", p: [], e: [], k: 1], true},
+      {[a: "akey_2", p: [], e: [], k: 1], false},
+      {[a: "akey_1", p: ["pkey_1"], e: [], k: 1], true},
+      {[a: "akey_1", p: [], e: ["ekey_1"], k: 1], true},
       # should also require pkey_4 to match
-      {[a: "akey_2", p: [], e: ["ekey_4"]], false},
-      {[a: "akey_2", p: ["pkey_4"], e: ["ekey_4"]], true},
-      {[a: "akey_4", p: ["pkey_4"], e: []], false},
-      {[a: "akey_4", p: ["pkey_4"], e: ["ekey_4"]], true},
-      {[a: "akey_4", p: [], e: ["ekey_4"]], false},
-      {[a: "akey_5", p: ["pkey_5"], e: []], false},
-      {[a: "akey_5", p: [], e: ["ekey_5"]], false},
-      {[a: "akey_5", p: [], e: ["ekey_6"]], false},
-      {[a: "akey_5", p: [], e: []], false},
-      {[a: "akey_5", p: ["pkey_5"], e: ["ekey_5"]], true},
-      {[a: "akey_1", p: [], e: ["ekey_6"]], true},
-      {[a: "akey_7", p: [], e: ["ekey_6"]], false},
-      {[a: "akey_6", p: [], e: ["ekey_6"]], true}
+      {[a: "akey_2", p: [], e: ["ekey_4"], k: 1], false},
+      {[a: "akey_2", p: ["pkey_4"], e: ["ekey_4"], k: 1], true},
+      {[a: "akey_4", p: ["pkey_4"], e: [], k: 1], false},
+      {[a: "akey_4", p: ["pkey_4"], e: ["ekey_4"], k: 1], true},
+      {[a: "akey_4", p: [], e: ["ekey_4"], k: 1], false},
+      {[a: "akey_5", p: ["pkey_5"], e: [], k: 1], false},
+      {[a: "akey_5", p: [], e: ["ekey_5"], k: 1], false},
+      {[a: "akey_5", p: [], e: ["ekey_6"], k: 1], false},
+      {[a: "akey_5", p: [], e: [], k: 1], false},
+      {[a: "akey_5", p: ["pkey_5"], e: ["ekey_5"], k: 1], true},
+      {[a: "akey_1", p: [], e: ["ekey_6"], k: 1], true},
+      {[a: "akey_7", p: [], e: ["ekey_6"], k: 1], false},
+      {[a: "akey_6", p: [], e: ["ekey_6"], k: 1], true},
+      {[a: "akey_7", p: [], e: ["ekey_7"], k: 1], true},
+      {[a: "akey_7", p: [], e: ["ekey_7"], k: 7], false}
     ]
 
     for ev <- test_events_1 do
@@ -214,38 +207,30 @@ defmodule Nostrex.FastFilterTest do
       '{"#e": ["ekey_1", "ekey_2", "ekey_3"]}'
     ]
 
-    filter_object_set =
+    filter_set_1 =
       filter_set
-      |> Enum.map(fn f -> create_filter_from_string(f) end)
+      |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_1") end)
 
-    # setup subscription
-    sub_1_id = "123"
 
-    for f <- filter_set do
-      filter = create_filter_from_string(f)
+    filter_set_1 |> Enum.each(&(FastFilter.insert_filter(&1)))
 
-      filter
-      |> FastFilter.insert_filter(sub_1_id)
-    end
+    filter_set_2 =
+      filter_set
+      |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_2") end)
 
-    sub_2_id = "456"
+    filter_set_2 |> Enum.each(&(FastFilter.insert_filter(&1)))
 
-    for f <- filter_set do
-      filter = create_filter_from_string(f)
-
-      filter
-      |> FastFilter.insert_filter(sub_2_id)
-    end
-
+    # test that there are 6 etags filters (3 x 2 subscriptions)
     assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 6
 
-    FastFilter.delete_filter(sub_1_id, Enum.at(filter_object_set, 1))
+    # test that deleting the e filter for the first subscription only removes half of the entries in ets
+    FastFilter.delete_filter(Enum.at(filter_set_1, 1))
     assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 3
 
     # test that deleting the same filter doesn't raise
-    FastFilter.delete_filter(sub_1_id, Enum.at(filter_object_set, 1))
+    FastFilter.delete_filter( Enum.at(filter_set_2, 1))
 
-    FastFilter.delete_filter(sub_2_id, Enum.at(filter_object_set, 0))
+    FastFilter.delete_filter(Enum.at(filter_set_2, 0))
     assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 1
   end
 
@@ -258,7 +243,8 @@ defmodule Nostrex.FastFilterTest do
   test "test that filter can be deleted" do
   end
 
-  defp create_test_event(a: a, p: ps, e: es) do
+  defp create_test_event(a: a, p: ps, e: es, k: k) do
+
     tags =
       Enum.map(ps, fn p ->
         %{
@@ -285,12 +271,14 @@ defmodule Nostrex.FastFilterTest do
       |> Base.encode16()
       |> String.downcase()
 
+    k = if is_nil(k), do: 2, else: k
+
     params = %{
       id: rand_event_id,
       pubkey: a,
       created_at: DateTime.utc_now(),
       # TODO: test kind filters next
-      kind: 2,
+      kind: k,
       content: "test content",
       # just reuse event id since we're not testing any validation here
       sig: rand_event_id,
@@ -301,8 +289,8 @@ defmodule Nostrex.FastFilterTest do
     event
   end
 
-  defp create_filter_from_string(str) do
-    params = Jason.decode!(str, keys: :atoms)
+  defp create_filter_from_string(str, sub_id \\ nil) do
+    params = str |> Jason.decode!(keys: :atoms) |> Map.put(:subscription_id, sub_id || "subid#{:rand.uniform(99)}")
 
     %Filter{}
     |> Filter.changeset(params)

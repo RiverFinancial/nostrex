@@ -189,12 +189,14 @@ defmodule NostrexWeb.NostrSocket do
 
     filters
     |> Enum.map(fn params ->
+      params
+      |> Map.put(:subscription_id, subscription_id)
       Events.create_filter(params)
     end)
     |> Enum.reduce(state, fn filter, state ->
       if filter.until == nil or !timestamp_before_now?(filters.until) do
         filter
-        |> FastFilter.insert_filter(subscription_id)
+        |> FastFilter.insert_filter()
 
         update_in(state, [:subscriptions, subscription_id], &MapSet.put(&1, filter))
       else
@@ -205,7 +207,7 @@ defmodule NostrexWeb.NostrSocket do
 
   defp remove_subscription(state, subscription_id) do
     Enum.each(state.subscriptions[subscription_id], fn filter ->
-      FastFilter.delete_filter(subscription_id, filter)
+      FastFilter.delete_filter(filter)
     end)
 
     update_in(state.subscriptions, &Map.delete(&1, subscription_id))
