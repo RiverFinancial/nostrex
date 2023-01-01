@@ -75,7 +75,9 @@ defmodule Nostrex.FastFilter do
   def insert_filter(filter = %Filter{}) do
     filter_id = generate_filter_id(filter)
 
-    Logger.info("Inserting filter with id #{filter_id} for subscription #{filter.subscription_id}")
+    Logger.info(
+      "Inserting filter with id #{filter_id} for subscription #{filter.subscription_id}"
+    )
 
     # setup content identifier (author, e tag, ptag) -> filter_id tables
     ets_insert(:nostrex_ff_pubkeys, filter_id, filter.authors)
@@ -275,7 +277,6 @@ defmodule Nostrex.FastFilter do
   end
 
   defp broadcast_and_update_state(state, event = %Event{}, filter_id) do
-
     %{subscription_id: subscription_id} = parse_filter_id(filter_id)
 
     Logger.info("Broadcasting event for filter ID #{filter_id}")
@@ -291,7 +292,7 @@ defmodule Nostrex.FastFilter do
   defp broadcast_event(already_broadcast_sub_ids, filter_id, subscription_id, event) do
     # kind check
     kinds = ets_lookup(:nostrex_ff_kinds, filter_id)
-    kind_match? = (event.kind in kinds) or (kinds == [])
+    kind_match? = event.kind in kinds or kinds == []
     # only broadcast if not already broadcast to this subscription id
     unless MapSet.member?(already_broadcast_sub_ids, subscription_id) or !kind_match? do
       PubSub.broadcast(:nostrex_pubsub, subscription_id, {:event, event})

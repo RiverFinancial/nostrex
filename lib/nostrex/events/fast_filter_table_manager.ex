@@ -21,7 +21,14 @@ defmodule Nostrex.FastFilterTableManager do
   # and we want concurrent access for performance. race conditions are probably fine for this kind of application
   @impl true
   def init(_) do
-    ets_opts = [:bag, :public, :named_table, write_concurrency: true, read_concurrency: true]
+    ets_opts = [
+      :bag,
+      :public,
+      :named_table,
+      write_concurrency: true,
+      read_concurrency: true,
+      decentralized_counters: true
+    ]
 
     for table <- @ets_tables do
       :ets.new(table, ets_opts)

@@ -191,6 +191,7 @@ defmodule NostrexWeb.NostrSocket do
     |> Enum.map(fn params ->
       params
       |> Map.put(:subscription_id, subscription_id)
+
       Events.create_filter(params)
     end)
     |> Enum.reduce(state, fn filter, state ->

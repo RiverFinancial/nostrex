@@ -20,9 +20,8 @@ defmodule Nostrex.FilterTest do
 
   test "create filter and perform basic validation" do
     for [f, res] <- @test_filters do
-      params = f |> Jason.decode!(keys: :atoms) |> Map.put(:subscription_id, "subid#{:rand.uniform(99)}")
-
-
+      params =
+        f |> Jason.decode!(keys: :atoms) |> Map.put(:subscription_id, "subid#{:rand.uniform(99)}")
 
       {is_valid, _filter} =
         %Filter{}

@@ -76,7 +76,8 @@ defmodule Nostrex.FastFilterTest do
     ]
 
     for [f, i] <- valid_filters do
-      id = create_filter_from_string(f)
+      id =
+        create_filter_from_string(f)
         |> FastFilter.generate_filter_code()
 
       assert id == i
@@ -105,7 +106,11 @@ defmodule Nostrex.FastFilterTest do
 
     assert String.starts_with?(first_filter_pubkey_value, "ape:testsubscriptionid")
 
-    second_filter_result = :ets.lookup(:nostrex_ff_pubkeys, "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d")
+    second_filter_result =
+      :ets.lookup(
+        :nostrex_ff_pubkeys,
+        "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"
+      )
 
     assert String.starts_with?(elem(List.first(second_filter_result), 1), "a:testsubscriptionid:")
 
@@ -148,7 +153,7 @@ defmodule Nostrex.FastFilterTest do
       '{"#e": ["ekey_4"], "#p": ["pkey_4"]}',
       '{"authors": ["akey_5"], "#e": ["ekey_5"], "#p": ["pkey_5"]}',
       '{"authors":["akey_6"], "#e": ["ekey_6"]}',
-      '{"authors":["akey_7"], "#e": ["ekey_7"], "kinds": [1,2,3]}',
+      '{"authors":["akey_7"], "#e": ["ekey_7"], "kinds": [1,2,3]}'
     ]
 
     # setup subscription
@@ -211,14 +216,13 @@ defmodule Nostrex.FastFilterTest do
       filter_set
       |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_1") end)
 
-
-    filter_set_1 |> Enum.each(&(FastFilter.insert_filter(&1)))
+    filter_set_1 |> Enum.each(&FastFilter.insert_filter(&1))
 
     filter_set_2 =
       filter_set
       |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_2") end)
 
-    filter_set_2 |> Enum.each(&(FastFilter.insert_filter(&1)))
+    filter_set_2 |> Enum.each(&FastFilter.insert_filter(&1))
 
     # test that there are 6 etags filters (3 x 2 subscriptions)
     assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 6
@@ -228,7 +232,7 @@ defmodule Nostrex.FastFilterTest do
     assert Enum.count(:ets.tab2list(:nostrex_ff_etags)) == 3
 
     # test that deleting the same filter doesn't raise
-    FastFilter.delete_filter( Enum.at(filter_set_2, 1))
+    FastFilter.delete_filter(Enum.at(filter_set_2, 1))
 
     FastFilter.delete_filter(Enum.at(filter_set_2, 0))
     assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 1
@@ -244,7 +248,6 @@ defmodule Nostrex.FastFilterTest do
   end
 
   defp create_test_event(a: a, p: ps, e: es, k: k) do
-
     tags =
       Enum.map(ps, fn p ->
         %{
@@ -290,7 +293,10 @@ defmodule Nostrex.FastFilterTest do
   end
 
   defp create_filter_from_string(str, sub_id \\ nil) do
-    params = str |> Jason.decode!(keys: :atoms) |> Map.put(:subscription_id, sub_id || "subid#{:rand.uniform(99)}")
+    params =
+      str
+      |> Jason.decode!(keys: :atoms)
+      |> Map.put(:subscription_id, sub_id || "subid#{:rand.uniform(99)}")
 
     %Filter{}
     |> Filter.changeset(params)
