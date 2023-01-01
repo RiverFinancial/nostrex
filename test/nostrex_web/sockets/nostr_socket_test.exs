@@ -36,7 +36,7 @@ defmodule NostrexWeb.NostrSocketTest do
     end
   end
 
-  describe "REQ message functionality" do
+  describe "REQ message functionality and socket termination" do
     state = %{
       event_count: 0,
       req_count: 0,
@@ -45,14 +45,28 @@ defmodule NostrexWeb.NostrSocketTest do
 
     req_msg = ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}]'
 
-    {[text: resp], state} = NostrSocket.websocket_handle({:text, req_msg}, state)
+    assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
+
+    {[text: resp], new_state} = NostrSocket.websocket_handle({:text, req_msg}, state)
 
     assert resp =~ "success"
 
-    refute Enum.empty?(state.subscriptions)
+    assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 1
+
+    refute Enum.empty?(new_state.subscriptions)
+
+    # test termination happens properly and ETS gets cleand up
+
+    assert :ok = NostrSocket.terminate(:reason, "dummy req", new_state)
+
+    assert assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
   end
 
   describe "CLOSE message functionality" do
+  end
+
+  test "termination happens properly" do
+
   end
 
   # defp get_valid_event_message do

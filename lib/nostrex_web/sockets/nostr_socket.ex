@@ -169,7 +169,7 @@ defmodule NostrexWeb.NostrSocket do
 
     ## Ensure any state gets cleaned up before terminating
     state.subscriptions
-    |> Enum.each(fn sub_id, _ ->
+    |> Enum.each(fn {sub_id, _set} ->
       remove_subscription(state, sub_id)
     end)
 
@@ -209,6 +209,7 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   defp remove_subscription(state, subscription_id) do
+    Logger.info("Cleanup subscription #{subscription_id} from ETS")
     Enum.each(state.subscriptions[subscription_id], fn filter ->
       FastFilter.delete_filter(filter)
     end)
