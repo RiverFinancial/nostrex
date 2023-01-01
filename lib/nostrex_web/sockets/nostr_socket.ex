@@ -101,6 +101,7 @@ defmodule NostrexWeb.NostrSocket do
 
     {:ok, list} = Jason.decode(req, keys: :atoms)
     [_, subscription_id | filters] = list
+
     # TODO, ensure subscription_id doesn't have colon since we use as separator in filter_id
     state
     |> handle_req_event(subscription_id, filters)
@@ -191,8 +192,7 @@ defmodule NostrexWeb.NostrSocket do
     |> Enum.map(fn params ->
       params
       |> Map.put(:subscription_id, subscription_id)
-
-      Events.create_filter(params)
+      |> Events.create_filter()
     end)
     |> Enum.reduce(state, fn filter, state ->
       if filter.until == nil or !timestamp_before_now?(filters.until) do
