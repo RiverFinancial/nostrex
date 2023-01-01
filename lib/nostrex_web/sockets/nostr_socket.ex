@@ -66,7 +66,7 @@ defmodule NostrexWeb.NostrSocket do
   # Implement basic ping pong handler for easy health checking
   def websocket_handle({:text, "ping"}, state) do
     Logger.info("Ping endpoint hit")
-    {[{:text, "pong"}], state}
+    {[text: "pong"], state}
   end
 
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
@@ -88,7 +88,9 @@ defmodule NostrexWeb.NostrSocket do
           "error: unable to save event"
       end
 
-    {[{:text, resp}], state}
+    new_state = increment_state_counter(state, :event_count)
+
+    {[text: resp], new_state}
   end
 
   @doc """
@@ -103,12 +105,11 @@ defmodule NostrexWeb.NostrSocket do
     [_, subscription_id | filters] = list
 
     # TODO, ensure subscription_id doesn't have colon since we use as separator in filter_id
-    state
+    new_state = state
     |> handle_req_event(subscription_id, filters)
-    |> increment_state_counter(:event_count)
     |> increment_state_counter(:req_count)
 
-    {[{:text, "success"}], state}
+    {[text: "success"], new_state}
   end
 
   # Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
@@ -125,7 +126,7 @@ defmodule NostrexWeb.NostrSocket do
     subscription_id = Enum.at(list, 1)
     remove_subscription(state, subscription_id)
 
-    {[{:close, "success"}], state}
+    {[close: "success"], state}
   end
 
   # # a message was delivered from a client. Here we handle it by just echoing it back
@@ -142,7 +143,7 @@ defmodule NostrexWeb.NostrSocket do
   def websocket_info({:event, event = %Event{}}, state) do
     Logger.info("Sending event #{event.id} to subscriber")
     event_json = MessageParser.event_to_json(event)
-    {[{:text, event_json}], state}
+    {[text: event_json], state}
   end
 
   def websocket_info(info, state) do
@@ -155,7 +156,7 @@ defmodule NostrexWeb.NostrSocket do
     #{inspect(msgs)}
     """)
 
-    {[{:text, "handling shouldn't be called"}], state}
+    {[text: "handling shouldn't be called"], state}
   end
 
   # placeholder catch all
@@ -165,6 +166,7 @@ defmodule NostrexWeb.NostrSocket do
 
   @impl true
   def terminate(_reason, _partial_req, state) do
+
     ## Ensure any state gets cleaned up before terminating
     state.subscriptions
     |> Enum.each(fn sub_id, _ ->

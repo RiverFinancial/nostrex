@@ -19,6 +19,10 @@ defmodule Nostrex.Events do
     |> Repo.insert()
   end
 
+  def get_event_count() do
+    Repo.aggregate(Event, :count)
+  end
+
   # Only creating filter object in mem. No db calls
   def create_filter(params) do
     %Filter{}
