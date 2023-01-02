@@ -32,7 +32,7 @@ defmodule NostrexWeb.MessageParserTest do
           ]
         }
       ],
-      created_at: DateTime.from_unix!(1_671_994_854),
+      created_at: 1_671_994_854,
       kind: 1,
       content: "jet fuel can't melt steel beams",
       sig:

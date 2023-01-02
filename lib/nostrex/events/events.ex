@@ -50,9 +50,9 @@ defmodule Nostrex.Events do
 
     # NOTE: be sure to comment back below if uncommented for debugging
     # Inspect SQL generated
-    IO.inspect(
-      Ecto.Adapters.SQL.to_sql(:all, Repo, q)
-    )
+    # IO.inspect(
+    #   Ecto.Adapters.SQL.to_sql(:all, Repo, q)
+    # )
 
     Repo.all(q)
   end

@@ -11,7 +11,6 @@ defmodule NostrexWeb.MessageParser do
     event_params = Enum.at(list, 1)
 
     event_params
-    |> Map.update!(:created_at, &DateTime.from_unix!(&1))
     |> Map.update(:tags, [], fn tags ->
       if tags == nil or tags == [] do
         []
@@ -30,7 +29,7 @@ defmodule NostrexWeb.MessageParser do
     map = %{
       "id" => event.id,
       "pubkey" => event.pubkey,
-      "created_at" => DateTime.to_unix(event.created_at),
+      "created_at" => event.created_at,
       "kind" => event.kind,
       "content" => event.content,
       "sig" => event.sig

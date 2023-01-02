@@ -8,7 +8,7 @@ defmodule Nostrex.FixtureFactory do
     defaults = %{
       id: rand_identifier(),
       pubkey: rand_identifier(),
-      created_at: DateTime.utc_now(),
+      created_at: DateTime.to_unix(DateTime.utc_now()),
       kind: 1,
       content: "test string",
       sig: rand_identifier(),
@@ -59,8 +59,6 @@ defmodule Nostrex.FixtureFactory do
       subscription_id: rand_identifier()
     }
     params = Enum.into(opts, defaults)
-
-    IO.inspect params
 
     %Filter{}
     |> Filter.changeset(params)

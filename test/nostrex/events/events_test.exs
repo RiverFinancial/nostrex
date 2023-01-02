@@ -32,7 +32,7 @@ defmodule Nostrex.EventsTest do
           ]
         }
       ],
-      created_at: DateTime.from_unix!(1_671_994_854),
+      created_at: 1_671_994_854,
       kind: 1,
       content: "jet fuel can't melt steel beams",
       sig:
@@ -102,10 +102,9 @@ defmodule Nostrex.EventsTest do
 
   test "querying historical events from a filter" do
 
-    time_now = DateTime.utc_now()
-    time_now_unix = DateTime.to_unix(time_now)
-    time_future = DateTime.from_unix!(time_now_unix + 100)
-    time_past = DateTime.from_unix!(time_now_unix - 100)
+    time_now = DateTime.to_unix(DateTime.utc_now())
+    time_future = time_now + 100
+    time_past = time_now - 100
 
     # event identifier => event attributes
     test_events =
@@ -122,7 +121,7 @@ defmodule Nostrex.EventsTest do
     test_filter_params = [
       {[authors: ["akey_1"]], 1},
       {[authors: [], "#e": ["ekey_2"]], 0},
-      # {[authors: [], "#e": [], since: time_past], 3},
+      {[authors: [], "#e": [], since: time_past], 3},
     ]
 
     for params <- test_filter_params do

@@ -7,7 +7,7 @@ defmodule Nostrex.Events.Event do
 
   schema "events" do
     field :pubkey, :string
-    field :created_at, :utc_datetime
+    field :created_at, :integer
     field :kind, :integer
     field :content, :string
     field :sig, :string
@@ -74,7 +74,7 @@ defmodule Nostrex.Events.Event do
     Jason.encode([
       0,
       event.pubkey,
-      DateTime.to_unix(event.created_at, :second),
+      event.created_at,
       event.kind,
       # TODO: add tag functionality next
       [],
