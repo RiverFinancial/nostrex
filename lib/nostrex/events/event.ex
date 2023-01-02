@@ -11,7 +11,7 @@ defmodule Nostrex.Events.Event do
     field :kind, :integer
     field :content, :string
     field :sig, :string
-    has_many :tags, Tag
+    has_many :tags, Tag, preload_order: [asc: :id] # ensures tags get returned in order they are saved
     timestamps()
   end
 

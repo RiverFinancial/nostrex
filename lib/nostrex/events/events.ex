@@ -26,6 +26,10 @@ defmodule Nostrex.Events do
     Repo.aggregate(Event, :count)
   end
 
+  def get_event_by_id!(id) do
+    Repo.get(Event, id) |> Repo.preload([:tags])
+  end
+
   # Only creating filter object in mem. No db calls
   def create_filter(params) do
     %Filter{}

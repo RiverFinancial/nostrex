@@ -70,6 +70,28 @@ defmodule Nostrex.EventsTest do
     {:ok, _event} = Events.create_event(new_params)
   end
 
+  test "tags get saved in order in db" do
+    p_tags = Enum.map(1..100, fn i ->
+      "#{i}"
+    end)
+    e_tags = Enum.map(101..200, fn i ->
+      "#{i}"
+    end)
+
+    field_1_expectation = p_tags ++ e_tags
+
+    # fixture factory generates list with p tags first
+    # TODO: this is leaky and brittle
+    event = FixtureFactory.create_event_no_validation(e: e_tags, p: p_tags)
+
+    queried_event = Events.get_event_by_id!(event.id)
+
+    tag_field_1_list = queried_event.tags |> Enum.map(fn t -> t.field_1 end)
+
+    # test that lists are equal
+    assert field_1_expectation == tag_field_1_list
+  end
+
   test "ensure validation of proper field lengths and formatting" do
   end
 
