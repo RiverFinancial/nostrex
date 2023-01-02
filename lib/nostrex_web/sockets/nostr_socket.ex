@@ -235,10 +235,11 @@ defmodule NostrexWeb.NostrSocket do
   defp remove_subscription(state, subscription_id) do
     Logger.info("Cleanup subscription #{subscription_id} from ETS")
 
-    # TODO: fix bug here
-    Enum.each(state.subscriptions[subscription_id], fn filter ->
-      FastFilter.delete_filter(filter)
-    end)
+    if state.subscriptions != nil do
+      Enum.each(state.subscriptions[subscription_id], fn filter ->
+        FastFilter.delete_filter(filter)
+      end)
+    end
 
     update_in(state.subscriptions, &Map.delete(&1, subscription_id))
   end

@@ -43,6 +43,7 @@ defmodule Nostrex.Events do
   end
 
   defp broadcast_events([], _subscription_id), do: true
+
   defp broadcast_events(events, subscription_id) do
     Logger.info("Returning #{Enum.count(events)} events to subscriber #{subscription_id}")
     # TODO: look at chunking this up if the response sizes are too large
