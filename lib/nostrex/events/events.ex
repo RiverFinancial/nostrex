@@ -62,26 +62,42 @@ defmodule Nostrex.Events do
     query_limit = filter.limit || 100
     filter_map = Map.from_struct(filter)
 
+    # if scalar conditionals add scalar where clause with and statements
+    # if list conditionals add where clause with or statements
+
+    # TODO see if this code is optimal
     Event
-    |> join(:left, [e], assoc(e, :tags), as: :tags)
+    |> join(:left, [e], t in assoc(e, :tags), as: :tags)
+    |> where(^filter_by(:kinds, filter.kinds))
+    |> where(^filter_by(:since, filter.since))
+    |> where(^filter_by(:until, filter.until))
     |> where(^filter_where(filter_map))
-    |> preload(:tags)
+    |> preload([e, t], [tags: t])
     |> limit(^query_limit)
   end
 
-  # schema "events" do
-  #   field :pubkey, :string
-  #   field :created_at, :utc_datetime
-  #   field :kind, :integer
-  #   field :content, :string
-  #   field :sig, :string
-  #   has_many :tags, Tag
-  #   timestamps()
-  # end
+  defp filter_by(_, nil), do: []
+  defp filter_by(_, []), do: []
 
-  # See https://hexdocs.pm/ecto/dynamic-queries.html#dynamic-and-joins
+  defp filter_by(:kinds, kinds) do
+    dynamic([e], e.kind in ^kinds)
+  end
+
+  defp filter_by(:since, since) do
+    dynamic([e], e.created_at > ^since)
+  end
+
+  defp filter_by(:until, until) do
+    dynamic([e], e.created_at < ^until)
+  end
+
+  # if all empty lists, return empty
+  def filter_where(%{ids: [], authors: [], "#e": [], "#p": []}), do: []
+
   def filter_where(filter) do
-    Enum.reduce(filter, dynamic(true), fn
+
+    # where false + other conditions
+    Enum.reduce(filter, dynamic(false), fn
       # keep going if no value
       {_, nil}, dynamic ->
         dynamic
@@ -91,22 +107,14 @@ defmodule Nostrex.Events do
       {:subscription_id, _}, dynamic ->
         dynamic
       # handle limit elsewhere, not a "where" condition
-      {:limit, _}, dynamic ->
-        dynamic
       {:ids, list}, dynamic ->
-        dynamic([e], ^dynamic and e.id in ^list)
+        dynamic([e], ^dynamic or e.id in ^list)
       {:authors, list}, dynamic ->
-        dynamic([e], ^dynamic and e.pubkey in ^list)
-      {:kinds, list}, dynamic ->
-        dynamic([e], ^dynamic and e.kind in ^list)
+        dynamic([e], ^dynamic or e.pubkey in ^list)
       {:"#e", list}, dynamic ->
-        dynamic([tags: t], ^dynamic and t.type == "e" and t.field_1 in ^list)
+        dynamic([tags: t], ^dynamic or t.type == "e" and t.field_1 in ^list)
       {:"#p", list}, dynamic ->
-        dynamic([tags: t], ^dynamic and t.type == "p" and t.field_1 in ^list)
-      {:since, timestamp}, dynamic -> # TODO: look at or equals for both time conditions
-        dynamic([e], ^dynamic and e.created_at > ^timestamp)
-      {:until, timestamp}, dynamic ->
-        dynamic([e], ^dynamic and e.created_at < ^timestamp)
+        dynamic([tags: t], ^dynamic or t.type == "p" and t.field_1 in ^list)
       # keep going if no value
       {_, _}, dynamic ->
         dynamic
