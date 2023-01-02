@@ -8,3 +8,4 @@
 - [ ] NIP 11 Relay Information Document
 - [ ] NIP 15 End of Stored Events Notice
 - [ ] NIP 20 Command Results
+- [ ] NIP 40 Expiration Timestamp

@@ -46,6 +46,27 @@ defmodule Nostrex.FixtureFactory do
     event
   end
 
+  def create_filter(opts \\ []) do
+    defaults = %{
+      ids: [],
+      authors: [],
+      kinds: [],
+      "#e": [],
+      "#p": [],
+      since: nil,
+      until: nil,
+      limit: nil,
+      subscription_id: rand_identifier()
+    }
+    params = Enum.into(opts, defaults)
+
+    IO.inspect params
+
+    %Filter{}
+    |> Filter.changeset(params)
+    |> apply_action!(:update)
+  end
+
   def create_filter_from_string(str, sub_id \\ nil) do
     params =
       str

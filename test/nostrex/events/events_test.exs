@@ -102,16 +102,35 @@ defmodule Nostrex.EventsTest do
 
   test "querying historical events from a filter" do
 
+    time_now = DateTime.utc_now()
+    time_now_unix = DateTime.to_unix(time_now)
+    time_future = DateTime.from_unix!(time_now_unix + 100)
+    time_past = DateTime.from_unix!(time_now_unix - 100)
+
     # event identifier => event attributes
     test_events =
-      %{
-        "1" => {[pubkey: "akey_1", p: [], e: [], kind: 1], true}
-      }
+      [
+        [pubkey: "akey_1", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+        [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+        [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+      ]
 
+    for event <- test_events do
+      FixtureFactory.create_event_no_validation(event)
+    end
 
+    test_filter_params = [
+      {[authors: ["akey_1"]], 1},
+      {[authors: [], "#e": ["ekey_2"]], 0},
+      # {[authors: [], "#e": [], since: time_past], 3},
+    ]
 
-    for {_k, ev} <- test_events do
-      FixtureFactory.create_event_no_validation(elem(ev, 0))
+    for params <- test_filter_params do
+      filter = FixtureFactory.create_filter(elem(params, 0))
+
+      events = Events.get_events_matching_filter(filter)
+
+      assert Enum.count(events) == elem(params, 1)
     end
 
 

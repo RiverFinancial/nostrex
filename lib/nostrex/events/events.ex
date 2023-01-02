@@ -46,18 +46,26 @@ defmodule Nostrex.Events do
   end
 
   defp query_historical_events(filter) do
-    filter
-    |> filter_query()
-    |> Repo.all()
+    q = filter_query(filter)
+
+    # NOTE: be sure to comment back below if uncommented for debugging
+    # Inspect SQL generated
+    IO.inspect(
+      Ecto.Adapters.SQL.to_sql(:all, Repo, q)
+    )
+
+    Repo.all(q)
   end
 
   defp filter_query(filter) do
     # TODO, change this default
     query_limit = filter.limit || 100
+    filter_map = Map.from_struct(filter)
 
     Event
-    |> join(:inner, [e], assoc(e, :tags), as: :tags)
-    |> where(^filter_where(filter))
+    |> join(:left, [e], assoc(e, :tags), as: :tags)
+    |> where(^filter_where(filter_map))
+    |> preload(:tags)
     |> limit(^query_limit)
   end
 
@@ -76,6 +84,8 @@ defmodule Nostrex.Events do
     Enum.reduce(filter, dynamic(true), fn
       # keep going if no value
       {_, nil}, dynamic ->
+        dynamic
+      {_, []}, dynamic ->
         dynamic
       # ignore subscription id param
       {:subscription_id, _}, dynamic ->
@@ -97,6 +107,9 @@ defmodule Nostrex.Events do
         dynamic([e], ^dynamic and e.created_at > ^timestamp)
       {:until, timestamp}, dynamic ->
         dynamic([e], ^dynamic and e.created_at < ^timestamp)
+      # keep going if no value
+      {_, _}, dynamic ->
+        dynamic
     end)
   end
 
