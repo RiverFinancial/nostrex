@@ -144,7 +144,7 @@ defmodule NostrexWeb.NostrSocket do
   def websocket_info(info, state)
 
   def websocket_info({:events, events, subscription_id}, state) when is_list(events) do
-    # Logger.info("Sending event #{event.id} to subscriber")
+    Logger.info("Sending events #{inspect(events)} to subscription #{subscription_id}")
     event_json = MessageParser.generate_event_list_response(events, subscription_id)
     {[text: event_json], state}
   end
