@@ -35,7 +35,11 @@ defmodule Nostrex.Events do
   def get_events_matching_filter_and_broadcast(%Filter{} = filter) do
     events = get_events_matching_filter(filter)
     # TODO: look at chunking this up if the response sizes are too large
-    PubSub.broadcast!(:nostrex_pubsub, filter.subscription_id, {:events, events, filter.subscription_id})
+    PubSub.broadcast!(
+      :nostrex_pubsub,
+      filter.subscription_id,
+      {:events, events, filter.subscription_id}
+    )
   end
 
   def get_events_matching_filter(%Filter{} = filter) do
@@ -43,10 +47,13 @@ defmodule Nostrex.Events do
       # return nil if filter since is in the future
       filter.since != nil and !timestamp_before_now?(filter.since) ->
         []
+
       filter.until != nil and timestamp_before_now?(filter.until) ->
         []
+
       filter.limit != nil and filter.limit == 0 ->
         []
+
       true ->
         query_historical_events(filter)
     end
@@ -79,7 +86,7 @@ defmodule Nostrex.Events do
     |> where(^filter_by(:since, filter.since))
     |> where(^filter_by(:until, filter.until))
     |> where(^filter_where(filter_map))
-    |> preload([e, t], [tags: t])
+    |> preload([e, t], tags: t)
     |> limit(^query_limit)
   end
 
@@ -102,26 +109,32 @@ defmodule Nostrex.Events do
   def filter_where(%{ids: [], authors: [], "#e": [], "#p": []}), do: []
 
   def filter_where(filter) do
-
     # where false + other conditions
     Enum.reduce(filter, dynamic(false), fn
       # keep going if no value
       {_, nil}, dynamic ->
         dynamic
+
       {_, []}, dynamic ->
         dynamic
+
       # ignore subscription id param
       {:subscription_id, _}, dynamic ->
         dynamic
+
       # handle limit elsewhere, not a "where" condition
       {:ids, list}, dynamic ->
         dynamic([e], ^dynamic or e.id in ^list)
+
       {:authors, list}, dynamic ->
         dynamic([e], ^dynamic or e.pubkey in ^list)
+
       {:"#e", list}, dynamic ->
-        dynamic([tags: t], ^dynamic or t.type == "e" and t.field_1 in ^list)
+        dynamic([tags: t], ^dynamic or (t.type == "e" and t.field_1 in ^list))
+
       {:"#p", list}, dynamic ->
-        dynamic([tags: t], ^dynamic or t.type == "p" and t.field_1 in ^list)
+        dynamic([tags: t], ^dynamic or (t.type == "p" and t.field_1 in ^list))
+
       # keep going if no value
       {_, _}, dynamic ->
         dynamic

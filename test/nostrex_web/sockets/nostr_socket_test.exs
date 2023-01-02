@@ -36,7 +36,9 @@ defmodule NostrexWeb.NostrSocketTest do
         req_count: 0,
         subscriptions: %{}
       }
-      req_msg = ~s(["EVENT", {"content":"jet fuel can't melt steel beams","created_at":12334555,"id":"75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009","kind":1,"pubkey":"3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d","sig":"230e9d8f0ddaf7eb70b5f7741ccfa37e87a455c9a469282e3464e2052d3192cd63a167e196e381ef9d7e69e9ea43af2443b839974dc85d8aaab9efe1d9296524"}])
+
+      req_msg =
+        ~s(["EVENT", {"content":"jet fuel can't melt steel beams","created_at":12334555,"id":"75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009","kind":1,"pubkey":"3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d","sig":"230e9d8f0ddaf7eb70b5f7741ccfa37e87a455c9a469282e3464e2052d3192cd63a167e196e381ef9d7e69e9ea43af2443b839974dc85d8aaab9efe1d9296524"}])
 
       assert Nostrex.Events.get_event_count() == 0
       {[text: resp], state} = NostrSocket.websocket_handle({:text, req_msg}, state)
@@ -58,7 +60,9 @@ defmodule NostrexWeb.NostrSocketTest do
 
     future_time = (DateTime.utc_now() |> DateTime.to_unix()) + 1000
     past_time = (DateTime.utc_now() |> DateTime.to_unix()) - 2000
-    req_msg = ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"], "until": #{future_time}}, {"authors": ["auth2"], "until": #{past_time}}]'
+
+    req_msg =
+      ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"], "until": #{future_time}}, {"authors": ["auth2"], "until": #{past_time}}]'
 
     assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
 
@@ -108,9 +112,12 @@ defmodule NostrexWeb.NostrSocketTest do
 
     new_event_id = "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009"
     new_event_pubkey = event.pubkey
-    new_event_message = ~s(["EVENT", {"content":"jet fuel can't melt steel beams","created_at":12334555,"id":"#{new_event_id}","kind":1,"pubkey":"#{new_event_pubkey}","sig":"230e9d8f0ddaf7eb70b5f7741ccfa37e87a455c9a469282e3464e2052d3192cd63a167e196e381ef9d7e69e9ea43af2443b839974dc85d8aaab9efe1d9296524"}])
 
-    {[text: _resp], _new_state} = NostrSocket.websocket_handle({:text, new_event_message}, new_state)
+    new_event_message =
+      ~s(["EVENT", {"content":"jet fuel can't melt steel beams","created_at":12334555,"id":"#{new_event_id}","kind":1,"pubkey":"#{new_event_pubkey}","sig":"230e9d8f0ddaf7eb70b5f7741ccfa37e87a455c9a469282e3464e2052d3192cd63a167e196e381ef9d7e69e9ea43af2443b839974dc85d8aaab9efe1d9296524"}])
+
+    {[text: _resp], _new_state} =
+      NostrSocket.websocket_handle({:text, new_event_message}, new_state)
 
     assert Events.get_event_count() == 2
     assert_receive({:events, [%Event{id: ^new_event_id}], ^sub_id}, 100)
@@ -120,7 +127,6 @@ defmodule NostrexWeb.NostrSocketTest do
   end
 
   test "termination happens properly" do
-
   end
 
   # defp get_valid_event_message do

@@ -39,7 +39,6 @@ defmodule Nostrex.FixtureFactory do
           }
         end)
 
-
     params = Map.put(params, :tags, tags)
 
     {:ok, event} = Events.create_event_no_validation(params)
@@ -58,6 +57,7 @@ defmodule Nostrex.FixtureFactory do
       limit: nil,
       subscription_id: rand_identifier()
     }
+
     params = Enum.into(opts, defaults)
 
     %Filter{}

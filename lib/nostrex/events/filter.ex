@@ -26,18 +26,22 @@ defmodule Nostrex.Events.Filter do
   end
 
   defp validate_one_field_not_empty(changeset) do
-    has_at_least_one_param? = Enum.reduce_while(changeset.changes, false, fn {k, v}, acc ->
-      case {k, v} do
-        {:subscription_id, _} ->
-          {:cont, false}
-        {_k, nil} ->
-          {:cont, false}
-        {_k, []} ->
-          {:cont, false}
-        {_, _} ->
-          {:halt, true}
-      end
-    end)
+    has_at_least_one_param? =
+      Enum.reduce_while(changeset.changes, false, fn {k, v}, _acc ->
+        case {k, v} do
+          {:subscription_id, _} ->
+            {:cont, false}
+
+          {_k, nil} ->
+            {:cont, false}
+
+          {_k, []} ->
+            {:cont, false}
+
+          {_, _} ->
+            {:halt, true}
+        end
+      end)
 
     if has_at_least_one_param? do
       changeset

@@ -83,7 +83,6 @@ defmodule NostrexWeb.NostrSocket do
           FastFilter.process_event(event)
           gen_notice("successfully created event #{event.id}")
 
-
         {:error, errors} ->
           Logger.error("failed to save event #{inspect(errors)}")
           gen_notice("error: unable to save event")
@@ -106,9 +105,10 @@ defmodule NostrexWeb.NostrSocket do
     [_, subscription_id | filters] = list
 
     # TODO, ensure subscription_id doesn't have colon since we use as separator in filter_id
-    new_state = state
-    |> handle_req_event(subscription_id, filters)
-    |> increment_state_counter(:req_count)
+    new_state =
+      state
+      |> handle_req_event(subscription_id, filters)
+      |> increment_state_counter(:req_count)
 
     resp = gen_notice("successfully created subscription #{subscription_id}")
 
@@ -169,7 +169,6 @@ defmodule NostrexWeb.NostrSocket do
 
   @impl true
   def terminate(_reason, _partial_req, state) do
-
     ## Ensure any state gets cleaned up before terminating
     state.subscriptions
     |> Enum.each(fn {sub_id, _set} ->
@@ -197,16 +196,16 @@ defmodule NostrexWeb.NostrSocket do
     # TODO check subscription doesn't already exist
     state = put_in(state, [:subscriptions, subscription_id], MapSet.new())
 
-    filters = unsanitized_filter_params
-                |> Enum.map(fn params ->
-                  params
-                  |> Map.put(:subscription_id, subscription_id)
-                  |> Events.create_filter()
-                end)
+    filters =
+      unsanitized_filter_params
+      |> Enum.map(fn params ->
+        params
+        |> Map.put(:subscription_id, subscription_id)
+        |> Events.create_filter()
+      end)
 
     # Iterate through filters, but use reduce to update state object throughout
     Enum.reduce(filters, state, fn filter, state ->
-
       # first get historical data for any filter
       query_and_return_historical_events(filter)
 
@@ -221,7 +220,7 @@ defmodule NostrexWeb.NostrSocket do
     Events.get_events_matching_filter_and_broadcast(filter)
   end
 
-  defp setup_future_subscription(filter, state, subscription_id)do
+  defp setup_future_subscription(filter, state, subscription_id) do
     if filter.until == nil or !timestamp_before_now?(filter.until) do
       filter
       |> FastFilter.insert_filter()
@@ -234,6 +233,7 @@ defmodule NostrexWeb.NostrSocket do
 
   defp remove_subscription(state, subscription_id) do
     Logger.info("Cleanup subscription #{subscription_id} from ETS")
+
     Enum.each(state.subscriptions[subscription_id], fn filter ->
       FastFilter.delete_filter(filter)
     end)

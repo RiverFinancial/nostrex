@@ -66,9 +66,10 @@ defmodule NostrexWeb.MessageParserTest do
   end
 
   test "generate_event_list_response creates valid json response" do
-    events = Enum.map(0..5, fn _x ->
-      FixtureFactory.create_event_no_validation()
-    end)
+    events =
+      Enum.map(0..5, fn _x ->
+        FixtureFactory.create_event_no_validation()
+      end)
 
     sub_id = "1234"
 

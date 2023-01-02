@@ -101,22 +101,26 @@ defmodule Nostrex.EventsTest do
   end
 
   test "querying historical events from a filter" do
-
     time_now = DateTime.to_unix(DateTime.utc_now())
     time_future = time_now + 100
     time_past = time_now - 100
 
     # event identifier => event attributes
-    test_events =
+    test_events = [
+      [pubkey: "akey_1", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+      [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+      [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
+      [pubkey: "akey_3", p: [], e: ["ekey_3", "ekey_31"], kind: 1, created_at: time_now],
+      [pubkey: "akey_4", p: [], e: [], kind: 1, created_at: time_future],
+      [pubkey: "akey_5", p: [], e: [], kind: 1, created_at: time_future],
       [
-        [pubkey: "akey_1", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
-        [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
-        [pubkey: "akey_2", p: [], e: ["ekey_1"], kind: 1, created_at: time_now],
-        [pubkey: "akey_3", p: [], e: ["ekey_3", "ekey_31"], kind: 1, created_at: time_now],
-        [pubkey: "akey_4", p: [], e: [], kind: 1, created_at: time_future],
-        [pubkey: "akey_5", p: [], e: [], kind: 1, created_at: time_future],
-        [pubkey: "akey_6", p: ["pkey_61", "pkey_62"], e: ["ekey_61", "ekey_62"], kind: 1, created_at: time_future],
+        pubkey: "akey_6",
+        p: ["pkey_61", "pkey_62"],
+        e: ["ekey_61", "ekey_62"],
+        kind: 1,
+        created_at: time_future
       ]
+    ]
 
     for event <- test_events do
       FixtureFactory.create_event_no_validation(event)
@@ -125,15 +129,29 @@ defmodule Nostrex.EventsTest do
     test_filter_params = [
       {[authors: ["akey_1"]], 1},
       {["#e": ["ekey_2"]], 0},
-      {["#e": ["ekey_3", "ekey_31"]], 1}, # test multiple tag criteria
-      {["#e": ["ekey_3", "ekey_31"], until: time_now + 1], 1}, # test until functionality
-      {["#e": ["ekey_3", "ekey_31"], until: time_now + 1], 1}, # test until functionality
-      {[kinds: [1]], Enum.count(test_events)}, # test kind match functionality
-      {["#e": [], since: time_past], Enum.count(test_events)}, # check since functionality
-      {["#e": [], since: time_future + 10], 0}, # check since functionality
-      {["#p": ["pkey_61", "pkey_62"], "#e": ["ekey_61", "ekey_62"]], 1}, # check multiple tag conditions
-      {[kinds: [2, 3], "#p": ["pkey_61", "pkey_62"], "#e": ["ekey_61", "ekey_62"]], 0}, # check kind no match
-      {[kinds: [1, 3], authors: ["akey_1", "akey_4"], "#p": ["ekey_3", "pkey_61", "pkey_62"], "#e": ["ekey_199"]], 3}, # check kind no match, also check wrong key in a tag field
+      # test multiple tag criteria
+      {["#e": ["ekey_3", "ekey_31"]], 1},
+      # test until functionality
+      {["#e": ["ekey_3", "ekey_31"], until: time_now + 1], 1},
+      # test until functionality
+      {["#e": ["ekey_3", "ekey_31"], until: time_now + 1], 1},
+      # test kind match functionality
+      {[kinds: [1]], Enum.count(test_events)},
+      # check since functionality
+      {["#e": [], since: time_past], Enum.count(test_events)},
+      # check since functionality
+      {["#e": [], since: time_future + 10], 0},
+      # check multiple tag conditions
+      {["#p": ["pkey_61", "pkey_62"], "#e": ["ekey_61", "ekey_62"]], 1},
+      # check kind no match
+      {[kinds: [2, 3], "#p": ["pkey_61", "pkey_62"], "#e": ["ekey_61", "ekey_62"]], 0},
+      # check kind no match, also check wrong key in a tag field
+      {[
+         kinds: [1, 3],
+         authors: ["akey_1", "akey_4"],
+         "#p": ["ekey_3", "pkey_61", "pkey_62"],
+         "#e": ["ekey_199"]
+       ], 3}
     ]
 
     for params <- test_filter_params do

@@ -22,8 +22,8 @@ config :nostrex, NostrexWeb.Endpoint,
     dispatch: [
       {:_,
        [
-         {"/", NostrexWeb.NostrSocket, []},
-        #  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
+         {"/", NostrexWeb.NostrSocket, []}
+         #  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
        ]}
     ]
   ]
