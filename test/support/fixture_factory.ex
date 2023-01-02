@@ -4,9 +4,22 @@ defmodule Nostrex.FixtureFactory do
 
   import Ecto.Changeset
 
-  def create_event_no_validation(a: a, p: ps, e: es, k: k) do
+  def create_event_no_validation(opts \\ []) do
+    defaults = %{
+      id: rand_identifier(),
+      pubkey: rand_identifier(),
+      created_at: DateTime.utc_now(),
+      kind: 1,
+      content: "test string",
+      sig: rand_identifier(),
+      p: [],
+      e: []
+    }
+
+    params = Enum.into(opts, defaults)
+
     tags =
-      Enum.map(ps, fn p ->
+      Enum.map(params[:p], fn p ->
         %{
           type: "p",
           field_1: p,
@@ -17,7 +30,7 @@ defmodule Nostrex.FixtureFactory do
 
     tags =
       tags ++
-        Enum.map(es, fn e ->
+        Enum.map(params[:e], fn e ->
           %{
             type: "e",
             field_1: e,
@@ -26,24 +39,8 @@ defmodule Nostrex.FixtureFactory do
           }
         end)
 
-    rand_event_id =
-      :crypto.hash(:sha256, Integer.to_string(:rand.uniform(99_999_999_999)))
-      |> Base.encode16()
-      |> String.downcase()
 
-    k = if is_nil(k), do: 2, else: k
-
-    params = %{
-      id: rand_event_id,
-      pubkey: a,
-      created_at: DateTime.utc_now(),
-      # TODO: test kind filters next
-      kind: k,
-      content: "test content",
-      # just reuse event id since we're not testing any validation here
-      sig: rand_event_id,
-      tags: tags
-    }
+    params = Map.put(params, :tags, tags)
 
     {:ok, event} = Events.create_event_no_validation(params)
     event
@@ -58,5 +55,11 @@ defmodule Nostrex.FixtureFactory do
     %Filter{}
     |> Filter.changeset(params)
     |> apply_action!(:update)
+  end
+
+  defp rand_identifier() do
+    :crypto.hash(:sha256, Integer.to_string(:rand.uniform(99_999_999_999)))
+    |> Base.encode16()
+    |> String.downcase()
   end
 end

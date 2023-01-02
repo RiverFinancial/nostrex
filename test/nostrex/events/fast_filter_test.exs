@@ -170,26 +170,26 @@ defmodule Nostrex.FastFilterTest do
     end
 
     test_events_1 = [
-      {[a: "akey_1", p: [], e: [], k: 1], true},
-      {[a: "akey_2", p: [], e: [], k: 1], false},
-      {[a: "akey_1", p: ["pkey_1"], e: [], k: 1], true},
-      {[a: "akey_1", p: [], e: ["ekey_1"], k: 1], true},
+      {[pubkey: "akey_1", p: [], e: [], kind: 1], true},
+      {[pubkey: "akey_2", p: [], e: [], kind: 1], false},
+      {[pubkey: "akey_1", p: ["pkey_1"], e: [], kind: 1], true},
+      {[pubkey: "akey_1", p: [], e: ["ekey_1"], kind: 1], true},
       # should also require pkey_4 to match
-      {[a: "akey_2", p: [], e: ["ekey_4"], k: 1], false},
-      {[a: "akey_2", p: ["pkey_4"], e: ["ekey_4"], k: 1], true},
-      {[a: "akey_4", p: ["pkey_4"], e: [], k: 1], false},
-      {[a: "akey_4", p: ["pkey_4"], e: ["ekey_4"], k: 1], true},
-      {[a: "akey_4", p: [], e: ["ekey_4"], k: 1], false},
-      {[a: "akey_5", p: ["pkey_5"], e: [], k: 1], false},
-      {[a: "akey_5", p: [], e: ["ekey_5"], k: 1], false},
-      {[a: "akey_5", p: [], e: ["ekey_6"], k: 1], false},
-      {[a: "akey_5", p: [], e: [], k: 1], false},
-      {[a: "akey_5", p: ["pkey_5"], e: ["ekey_5"], k: 1], true},
-      {[a: "akey_1", p: [], e: ["ekey_6"], k: 1], true},
-      {[a: "akey_7", p: [], e: ["ekey_6"], k: 1], false},
-      {[a: "akey_6", p: [], e: ["ekey_6"], k: 1], true},
-      {[a: "akey_7", p: [], e: ["ekey_7"], k: 1], true},
-      {[a: "akey_7", p: [], e: ["ekey_7"], k: 7], false}
+      {[pubkey: "akey_2", p: [], e: ["ekey_4"], kind: 1], false},
+      {[pubkey: "akey_2", p: ["pkey_4"], e: ["ekey_4"], kind: 1], true},
+      {[pubkey: "akey_4", p: ["pkey_4"], e: [], kind: 1], false},
+      {[pubkey: "akey_4", p: ["pkey_4"], e: ["ekey_4"], kind: 1], true},
+      {[pubkey: "akey_4", p: [], e: ["ekey_4"], kind: 1], false},
+      {[pubkey: "akey_5", p: ["pkey_5"], e: [], kind: 1], false},
+      {[pubkey: "akey_5", p: [], e: ["ekey_5"], kind: 1], false},
+      {[pubkey: "akey_5", p: [], e: ["ekey_6"], kind: 1], false},
+      {[pubkey: "akey_5", p: [], e: [], kind: 1], false},
+      {[pubkey: "akey_5", p: ["pkey_5"], e: ["ekey_5"], kind: 1], true},
+      {[pubkey: "akey_1", p: [], e: ["ekey_6"], kind: 1], true},
+      {[pubkey: "akey_7", p: [], e: ["ekey_6"], kind: 1], false},
+      {[pubkey: "akey_6", p: [], e: ["ekey_6"], kind: 1], true},
+      {[pubkey: "akey_7", p: [], e: ["ekey_7"], kind: 1], true},
+      {[pubkey: "akey_7", p: [], e: ["ekey_7"], kind: 7], false}
     ]
 
     for ev <- test_events_1 do

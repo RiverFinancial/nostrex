@@ -3,7 +3,7 @@ defmodule NostrexWeb.NostrSocket do
   require Logger
 
   alias Nostrex.Events
-  alias Nostrex.Events.Event
+  alias Nostrex.Events.{Event, Filter}
   alias Phoenix.PubSub
   alias Nostrex.FastFilter
   alias NostrexWeb.MessageParser
@@ -149,7 +149,7 @@ defmodule NostrexWeb.NostrSocket do
   def websocket_info(info, state) do
     msgs = Process.info(self(), :messages)
 
-    Logger.info("""
+    Logger.error("""
     default websocket event handler (shouldn't be called)
     #{inspect(info)}
     #{inspect(state)}
@@ -186,7 +186,7 @@ defmodule NostrexWeb.NostrSocket do
     state
   end
 
-  defp handle_req_event(state, subscription_id, filters) do
+  defp handle_req_event(state, subscription_id, unsanitized_filter_params) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
     PubSub.subscribe(:nostrex_pubsub, subscription_id)
@@ -194,22 +194,41 @@ defmodule NostrexWeb.NostrSocket do
     # TODO check subscription doesn't already exist
     state = put_in(state, [:subscriptions, subscription_id], MapSet.new())
 
-    filters
-    |> Enum.map(fn params ->
-      params
-      |> Map.put(:subscription_id, subscription_id)
-      |> Events.create_filter()
-    end)
-    |> Enum.reduce(state, fn filter, state ->
-      if filter.until == nil or !timestamp_before_now?(filter.until) do
-        filter
-        |> FastFilter.insert_filter()
+    filters = unsanitized_filter_params
+                |> Enum.map(fn params ->
+                  params
+                  |> Map.put(:subscription_id, subscription_id)
+                  |> Events.create_filter()
+                end)
 
-        update_in(state, [:subscriptions, subscription_id], &MapSet.put(&1, filter))
-      else
-        state
-      end
+    # Iterate through filters, but use reduce to update state object throughout
+    Enum.reduce(filters, state, fn filter, state ->
+
+      # first get historical data for any filter
+      query_and_return_historical_events(filter)
+
+      # then subscribe to future events if relevant
+      # it will return state object
+      setup_future_subscription(filter, state, subscription_id)
     end)
+  end
+
+  defp query_and_return_historical_events(filter = %Filter{}) do
+    # check that filter since does not disqualify it from getting historical events
+    if filter.since == nil or timestamp_before_now?(filter.since) do
+
+    end
+  end
+
+  defp setup_future_subscription(filter, state, subscription_id)do
+    if filter.until == nil or !timestamp_before_now?(filter.until) do
+      filter
+      |> FastFilter.insert_filter()
+
+      update_in(state, [:subscriptions, subscription_id], &MapSet.put(&1, filter))
+    else
+      state
+    end
   end
 
   defp remove_subscription(state, subscription_id) do

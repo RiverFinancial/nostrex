@@ -1,5 +1,6 @@
 defmodule Nostrex.EventsTest do
   use Nostrex.DataCase
+  alias Nostrex.FixtureFactory
   alias Nostrex.Events
   alias Nostrex.Events.Event
 
@@ -97,5 +98,37 @@ defmodule Nostrex.EventsTest do
     {:ok, event} = Events.create_event(event_params)
 
     assert event.id == Event.calculate_id(event)
+  end
+
+  test "querying historical events from a filter" do
+
+    # event identifier => event attributes
+    test_events =
+      %{
+        "1" => {[pubkey: "akey_1", p: [], e: [], kind: 1], true}
+      }
+
+
+
+    for {_k, ev} <- test_events do
+      FixtureFactory.create_event_no_validation(elem(ev, 0))
+    end
+
+
+
+    # for ev <- test_events_1 do
+    #   event = create_test_event(elem(ev, 0))
+
+    #   event_id = event.id
+    #   should_receive? = elem(ev, 1)
+
+      # FastFilter.process_event(event)
+
+      # if should_receive? do
+      #   assert_receive({:event, %Event{id: ^event_id}}, 100)
+      # else
+      #   refute_receive({:event, %Event{id: ^event_id}}, 100)
+      # end
+    # end
   end
 end
