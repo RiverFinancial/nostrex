@@ -35,15 +35,21 @@ defmodule Nostrex.Events do
 
   def get_events_matching_filter_and_broadcast(%Filter{} = filter) do
     events = get_events_matching_filter(filter)
-
+    Logger.info("Looking for past events in get_events_matching_filter_and_broadcast")
     Logger.info(inspect(filter))
     Logger.info(inspect(events))
-    Logger.info("Returning #{Enum.count(events)} events to subscriber #{filter.subscription_id}")
+
+    broadcast_events(events, filter.subscription_id)
+  end
+
+  defp broadcast_events([], _subscription_id), do: true
+  defp broadcast_events(events, subscription_id) do
+    Logger.info("Returning #{Enum.count(events)} events to subscriber #{subscription_id}")
     # TODO: look at chunking this up if the response sizes are too large
     PubSub.broadcast!(
       :nostrex_pubsub,
-      filter.subscription_id,
-      {:events, events, filter.subscription_id}
+      subscription_id,
+      {:events, events, subscription_id}
     )
   end
 
