@@ -92,17 +92,17 @@ defmodule NostrexWeb.NostrSocketTest do
 
     assert Events.get_event_count() == 1
 
-    sub_id = "1234"
-    req_msg = ~s'["REQ", "1234", {"authors":["#{event.pubkey}"]}]'
+    sub_id = "12345"
+    req_msg = ~s'["REQ", "#{sub_id}", {"authors":["#{event.pubkey}"]}]'
 
     # test that it receives historical events
     PubSub.subscribe(:nostrex_pubsub, sub_id)
+    refute_received({:events, _, _})
 
     {[text: resp], new_state} = NostrSocket.websocket_handle({:text, req_msg}, state)
     assert resp =~ "success"
 
     assert_received({:events, [%Event{id: ^event_id}], ^sub_id})
-    # assert_received({:event, %Event{id: ^event_id}})
 
     # test that it receives a new event
 

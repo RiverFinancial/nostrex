@@ -34,9 +34,8 @@ defmodule Nostrex.Events do
 
   def get_events_matching_filter_and_broadcast(%Filter{} = filter) do
     events = get_events_matching_filter(filter)
-    for event <- events do
-      PubSub.broadcast!(:nostrex_pubsub, filter.subscription_id, {:events, [event], filter.subscription_id})
-    end
+    # TODO: look at chunking this up if the response sizes are too large
+    PubSub.broadcast!(:nostrex_pubsub, filter.subscription_id, {:events, events, filter.subscription_id})
   end
 
   def get_events_matching_filter(%Filter{} = filter) do
