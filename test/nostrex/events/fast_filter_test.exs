@@ -3,9 +3,11 @@ defmodule Nostrex.FastFilterTest do
 
   alias Phoenix.PubSub
   alias Nostrex.Events
-  alias Nostrex.Events.{Event, Filter}
+  alias Nostrex.Events.{Event}
   alias Nostrex.{FastFilter, FastFilterTableManager}
   require IEx
+
+  alias Nostrex.FixtureFactory
 
   setup do
     # cleanup all ETS tables
@@ -77,7 +79,7 @@ defmodule Nostrex.FastFilterTest do
 
     for [f, i] <- valid_filters do
       id =
-        create_filter_from_string(f)
+        FixtureFactory.create_filter_from_string(f)
         |> FastFilter.generate_filter_code()
 
       assert id == i
@@ -96,7 +98,7 @@ defmodule Nostrex.FastFilterTest do
     ]
 
     for [f, _] <- valid_filters do
-      create_filter_from_string(f, "testsubscriptionid")
+      FixtureFactory.create_filter_from_string(f, "testsubscriptionid")
       |> FastFilter.insert_filter()
     end
 
@@ -128,7 +130,7 @@ defmodule Nostrex.FastFilterTest do
     filter_string =
       '{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}'
 
-    filter = create_filter_from_string(filter_string)
+    filter = FixtureFactory.create_filter_from_string(filter_string)
     PubSub.subscribe(:nostrex_pubsub, filter.subscription_id)
 
     FastFilter.insert_filter(filter)
@@ -161,7 +163,7 @@ defmodule Nostrex.FastFilterTest do
     PubSub.subscribe(:nostrex_pubsub, sub_id)
 
     for f <- filter_set_1 do
-      filter = create_filter_from_string(f, sub_id)
+      filter = FixtureFactory.create_filter_from_string(f, sub_id)
 
       filter
       |> FastFilter.insert_filter()
@@ -191,7 +193,7 @@ defmodule Nostrex.FastFilterTest do
     ]
 
     for ev <- test_events_1 do
-      event = create_test_event(elem(ev, 0))
+      event = FixtureFactory.create_event_no_validation(elem(ev, 0))
 
       event_id = event.id
       should_receive? = elem(ev, 1)
@@ -214,13 +216,13 @@ defmodule Nostrex.FastFilterTest do
 
     filter_set_1 =
       filter_set
-      |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_1") end)
+      |> Enum.map(fn f -> FixtureFactory.create_filter_from_string(f, "sub_id_1") end)
 
     filter_set_1 |> Enum.each(&FastFilter.insert_filter(&1))
 
     filter_set_2 =
       filter_set
-      |> Enum.map(fn f -> create_filter_from_string(f, "sub_id_2") end)
+      |> Enum.map(fn f -> FixtureFactory.create_filter_from_string(f, "sub_id_2") end)
 
     filter_set_2 |> Enum.each(&FastFilter.insert_filter(&1))
 
@@ -245,61 +247,5 @@ defmodule Nostrex.FastFilterTest do
   end
 
   test "test that filter can be deleted" do
-  end
-
-  defp create_test_event(a: a, p: ps, e: es, k: k) do
-    tags =
-      Enum.map(ps, fn p ->
-        %{
-          type: "p",
-          field_1: p,
-          field_2: "test",
-          full_tag: ["p", p, "test"]
-        }
-      end)
-
-    tags =
-      tags ++
-        Enum.map(es, fn e ->
-          %{
-            type: "e",
-            field_1: e,
-            field_2: "test",
-            full_tag: ["e", e, "test"]
-          }
-        end)
-
-    rand_event_id =
-      :crypto.hash(:sha256, Integer.to_string(:rand.uniform(99_999_999_999)))
-      |> Base.encode16()
-      |> String.downcase()
-
-    k = if is_nil(k), do: 2, else: k
-
-    params = %{
-      id: rand_event_id,
-      pubkey: a,
-      created_at: DateTime.utc_now(),
-      # TODO: test kind filters next
-      kind: k,
-      content: "test content",
-      # just reuse event id since we're not testing any validation here
-      sig: rand_event_id,
-      tags: tags
-    }
-
-    {:ok, event} = Events.create_event_no_validation(params)
-    event
-  end
-
-  defp create_filter_from_string(str, sub_id \\ nil) do
-    params =
-      str
-      |> Jason.decode!(keys: :atoms)
-      |> Map.put(:subscription_id, sub_id || "subid#{:rand.uniform(99)}")
-
-    %Filter{}
-    |> Filter.changeset(params)
-    |> apply_action!(:update)
   end
 end
