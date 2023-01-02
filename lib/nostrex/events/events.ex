@@ -4,6 +4,7 @@ defmodule Nostrex.Events do
   import Ecto.Changeset
   import Ecto.Query
   alias Phoenix.PubSub
+  require Logger
 
   def create_event(params) do
     %Event{}
@@ -34,6 +35,10 @@ defmodule Nostrex.Events do
 
   def get_events_matching_filter_and_broadcast(%Filter{} = filter) do
     events = get_events_matching_filter(filter)
+
+    Logger.info(inspect(filter))
+    Logger.info(inspect(events))
+    Logger.info("Returning #{Enum.count(events)} events to subscriber #{filter.subscription_id}")
     # TODO: look at chunking this up if the response sizes are too large
     PubSub.broadcast!(
       :nostrex_pubsub,

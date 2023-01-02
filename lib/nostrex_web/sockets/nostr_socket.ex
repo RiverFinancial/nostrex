@@ -216,6 +216,7 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   defp query_and_return_historical_events(filter = %Filter{}) do
+    Logger.info("Querying historical events for subscription: #{filter.subscription_id}")
     # query db for events and broadcast back to this subscribing socket
     Events.get_events_matching_filter_and_broadcast(filter)
   end
@@ -234,6 +235,7 @@ defmodule NostrexWeb.NostrSocket do
   defp remove_subscription(state, subscription_id) do
     Logger.info("Cleanup subscription #{subscription_id} from ETS")
 
+    # TODO: fix bug here
     Enum.each(state.subscriptions[subscription_id], fn filter ->
       FastFilter.delete_filter(filter)
     end)
