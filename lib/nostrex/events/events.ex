@@ -3,6 +3,7 @@ defmodule Nostrex.Events do
   alias Nostrex.Events.{Event, Filter}
   import Ecto.Changeset
   import Ecto.Query
+  alias Phoenix.PubSub
 
   def create_event(params) do
     %Event{}
@@ -29,6 +30,13 @@ defmodule Nostrex.Events do
     %Filter{}
     |> Filter.changeset(params)
     |> apply_action!(:update)
+  end
+
+  def get_events_matching_filter_and_broadcast(%Filter{} = filter) do
+    events = get_events_matching_filter(filter)
+    for event <- events do
+      PubSub.broadcast!(:nostrex_pubsub, filter.subscription_id, {:events, [event], filter.subscription_id})
+    end
   end
 
   def get_events_matching_filter(%Filter{} = filter) do

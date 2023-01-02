@@ -2,6 +2,7 @@ defmodule NostrexWeb.MessageParserTest do
   use NostrexWeb.ConnCase
   alias NostrexWeb.MessageParser
   alias Nostrex.Events
+  alias Nostrex.FixtureFactory
 
   defp sample_event_params() do
     %{
@@ -62,5 +63,18 @@ defmodule NostrexWeb.MessageParserTest do
     # Test tag ordering is maintained and that longer tags also work
     assert parsed_json[:id] == event.id
     assert Enum.count(Enum.at(parsed_json[:tags], 0)) == 5
+  end
+
+  test "generate_event_list_response creates valid json response" do
+    events = Enum.map(0..5, fn _x ->
+      FixtureFactory.create_event_no_validation()
+    end)
+
+    sub_id = "1234"
+
+    resp = MessageParser.generate_event_list_response(events, sub_id)
+    {:ok, _} = Jason.decode(resp)
+
+    assert resp =~ ~s'["EVENT",'
   end
 end

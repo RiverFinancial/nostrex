@@ -11,7 +11,7 @@ defmodule Nostrex.FixtureFactory do
       created_at: DateTime.to_unix(DateTime.utc_now()),
       kind: 1,
       content: "test string",
-      sig: rand_identifier(),
+      sig: rand_identifier() <> rand_identifier(),
       p: [],
       e: []
     }

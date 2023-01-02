@@ -142,7 +142,7 @@ defmodule Nostrex.FastFilterTest do
 
     FastFilter.process_event(event)
 
-    assert_receive({:event, %Event{}}, 100)
+    assert_receive({:events, [%Event{}], _sub_id}, 100)
   end
 
   test "multiple subscriptions with multiple filters, some of which don't match an event" do
@@ -201,9 +201,9 @@ defmodule Nostrex.FastFilterTest do
       FastFilter.process_event(event)
 
       if should_receive? do
-        assert_receive({:event, %Event{id: ^event_id}}, 100)
+        assert_receive({:events, [%Event{id: ^event_id}], ^sub_id}, 100)
       else
-        refute_receive({:event, %Event{id: ^event_id}}, 100)
+        refute_receive({:events, [%Event{id: ^event_id}], ^sub_id}, 100)
       end
     end
   end

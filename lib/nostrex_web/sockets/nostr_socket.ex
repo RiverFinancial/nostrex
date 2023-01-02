@@ -3,7 +3,7 @@ defmodule NostrexWeb.NostrSocket do
   require Logger
 
   alias Nostrex.Events
-  alias Nostrex.Events.{Event, Filter}
+  alias Nostrex.Events.{Filter}
   alias Phoenix.PubSub
   alias Nostrex.FastFilter
   alias NostrexWeb.MessageParser
@@ -81,11 +81,12 @@ defmodule NostrexWeb.NostrSocket do
       case Events.create_event(event_params) do
         {:ok, event} ->
           FastFilter.process_event(event)
-          "successfully created event #{event.id}"
+          gen_notice("successfully created event #{event.id}")
+
 
         {:error, errors} ->
           Logger.error("failed to save event #{inspect(errors)}")
-          "error: unable to save event"
+          gen_notice("error: unable to save event")
       end
 
     new_state = increment_state_counter(state, :event_count)
@@ -109,7 +110,9 @@ defmodule NostrexWeb.NostrSocket do
     |> handle_req_event(subscription_id, filters)
     |> increment_state_counter(:req_count)
 
-    {[text: "success"], new_state}
+    resp = gen_notice("successfully created subscription #{subscription_id}")
+
+    {[text: resp], new_state}
   end
 
   # Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
@@ -140,9 +143,9 @@ defmodule NostrexWeb.NostrSocket do
   @impl :cowboy_websocket
   def websocket_info(info, state)
 
-  def websocket_info({:event, event = %Event{}}, state) do
-    Logger.info("Sending event #{event.id} to subscriber")
-    event_json = MessageParser.event_to_json(event)
+  def websocket_info({:events, events, subscription_id}, state) when is_list(events) do
+    # Logger.info("Sending event #{event.id} to subscriber")
+    event_json = MessageParser.generate_event_list_response(events, subscription_id)
     {[text: event_json], state}
   end
 
@@ -214,10 +217,8 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   defp query_and_return_historical_events(filter = %Filter{}) do
-    # check that filter since does not disqualify it from getting historical events
-    if filter.since == nil or timestamp_before_now?(filter.since) do
-
-    end
+    # query db for events and broadcast back to this subscribing socket
+    Events.get_events_matching_filter_and_broadcast(filter)
   end
 
   defp setup_future_subscription(filter, state, subscription_id)do
@@ -243,5 +244,9 @@ defmodule NostrexWeb.NostrSocket do
   # TODO: consider adding some larger buffer here
   defp timestamp_before_now?(unix_timestamp) do
     DateTime.compare(DateTime.from_unix!(unix_timestamp), DateTime.utc_now()) == :lt
+  end
+
+  defp gen_notice(message) do
+    ~s(["NOTICE", "#{message}"])
   end
 end
