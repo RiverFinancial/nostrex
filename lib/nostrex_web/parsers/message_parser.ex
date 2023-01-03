@@ -9,8 +9,9 @@ defmodule NostrexWeb.MessageParser do
     # TODO: change this to not lead to dos vuln
     {:ok, list} = Jason.decode(req, keys: :atoms)
     event_params = Enum.at(list, 1)
+    raw_event = Jason.encode!(event_params)
 
-    event_params
+    map = event_params
     |> Map.update(:tags, [], fn tags ->
       if tags == nil or tags == [] do
         []
@@ -23,11 +24,13 @@ defmodule NostrexWeb.MessageParser do
         end)
       end
     end)
+
+    Map.put(map, :raw, raw_event)
   end
 
   def generate_event_list_response(events, subscription_id) do
     Enum.reduce(events, ~s'["EVENT","#{subscription_id}"', fn event, acc ->
-      acc <> "," <> event_to_json(event)
+      acc <> "," <> event.raw
     end) <> "]"
   end
 

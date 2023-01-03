@@ -4,6 +4,7 @@ defmodule Nostrex.Events.Event do
   alias Nostrex.Events.Tag
 
   @primary_key {:id, :string, autogenerate: false}
+  # @primary_key false
 
   schema "events" do
     field :pubkey, :string
@@ -11,30 +12,34 @@ defmodule Nostrex.Events.Event do
     field :kind, :integer
     field :content, :string
     field :sig, :string
+    field :raw, :string
+    # raw event json
     has_many :tags, Tag, preload_order: [asc: :id] # ensures tags get returned in order they are saved
     timestamps()
   end
 
-  @required_attrs ~w(id pubkey created_at kind content sig)a
+  @required_attrs ~w(id pubkey created_at kind content sig raw)a
   @doc false
+  # TODO, validate raw length isn't insane
   def changeset(event, attrs) do
     event
     |> cast(attrs, @required_attrs)
-    |> cast_assoc(:tags, with: &Tag.changeset/2)
+    |> cast_assoc(:tags, with: {Tag, :event_changeset, [attrs[:created_at]]})
     |> validate_required(@required_attrs)
     # 64 character hex string for 32 bytes
     |> validate_length(:id, is: 64)
     |> validate_length(:pubkey, is: 64)
     |> validate_length(:sig, is: 64 * 2)
-    # required to prevent throwing error on duplicate entry
-    |> unique_constraint(:id, name: "events_pkey")
+    # required to prevent throwing error on duplicate entry, suffix match required due to postgres
+    # automatically adding partition name to index
+    |> unique_constraint([:id, :created_at],name: :id_created_at_idx, match: :suffix)
   end
 
   # Only to be used by tests
   def test_only_changeset_no_validation(event, attrs) do
     event
     |> cast(attrs, @required_attrs)
-    |> cast_assoc(:tags, with: &Tag.changeset/2)
+    |> cast_assoc(:tags, with: {Tag, :event_changeset, [attrs[:created_at]]})
     |> validate_required(@required_attrs)
   end
 
