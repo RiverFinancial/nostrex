@@ -15,6 +15,15 @@ The Erlang OTP gives us the primitives necessary to build high-throughput, concu
 
 One of the major bottlenecks of scaling a relay are the database operations. Nostrex has already implemented a number of optimizations at the DB level, including partitioning by Event `created_at` timestamps to keep table sizes in check.
 
+### Fast Filtering
+
+Nostrex takes full advantage of the Erlang OTP's ETS in-memory datastore as the global state for a fast-filtering algorithm that efficiently matches events to filters instead of brute-forcing and checking each new event against every registered filter. There is still a lot of room to improve this algo.
+
+### Solid Foundation
+
+The Erlang OTP allowed Whatsapp to scale to billions of users with a small team of engineers. With the right optimizations I feel confident that a single beefy Nostr instance will be able to power millions of concurrent connections.
+
+
 ## TODOs for being production ready
 - [ ] Validate event signatures (waiting on Bitcoinex lib updates)
 - [ ] Remove unused boilerplate code
