@@ -119,6 +119,7 @@ defmodule Nostrex.FastFilter do
   end
 
   def delete_filter(filter) do
+    Logger.info("Deleting filters for sub_id: #{filter.subscription_id}")
     filter_id = generate_filter_id(filter)
 
     # TODO: improve efficiency by only deleting from necessary table
