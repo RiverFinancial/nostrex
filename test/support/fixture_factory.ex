@@ -41,6 +41,10 @@ defmodule Nostrex.FixtureFactory do
 
     params = Map.put(params, :tags, tags)
 
+    raw = Jason.encode!(params)
+
+    params = Map.put(params, :raw, raw)
+
     {:ok, event} = Events.create_event_no_validation(params)
     event
   end

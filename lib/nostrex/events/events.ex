@@ -96,13 +96,14 @@ defmodule Nostrex.Events do
     # if list conditionals add where clause with or statements
 
     # TODO see if this code is optimal
+    # No need to preload tags since we are going to return raw event field to user
     Event
+    |> distinct(true)
     |> join(:left, [e], t in assoc(e, :tags), as: :tags)
     |> where(^filter_by(:kinds, filter.kinds))
     |> where(^filter_by(:since, filter.since))
     |> where(^filter_by(:until, filter.until))
     |> where(^filter_where(filter_map))
-    |> preload([e, t], tags: t)
     |> limit(^query_limit)
   end
 

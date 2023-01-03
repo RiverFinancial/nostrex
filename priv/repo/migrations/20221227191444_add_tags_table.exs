@@ -3,6 +3,7 @@ defmodule Nostrex.Repo.Migrations.AddTagsTable do
 
   def change do
     create table(:tags, primary_key: false, options: "PARTITION BY RANGE (event_created_at)") do
+      add :id, :bigserial, null: false
       add :event_id, references(:events, type: :string, with: [event_created_at: :created_at]) # cannot be foreign key because of partitioned events table
       add :event_created_at, :integer # partition tags on same timestamp
       add :type, :string

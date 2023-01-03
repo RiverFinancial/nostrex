@@ -9,17 +9,16 @@ defmodule Nostrex.Repo.Migrations.CreateEvents do
       add :kind, :integer, null: false
       add :content, :text, null: false
       add :sig, :string, null: false
-      add :raw, :string, null: false
+      add :raw, :text, null: false
       timestamps()
     end
 
-    create index(:events, ["created_at DESC"])
     create index(:events, :pubkey)
     create index(:events, :kind)
 
     # this is ok to do because an event with a given :id CANNOT have a different created at
     # since created_at is included in the event SHA digest
-    create unique_index(:events, [:id, :created_at])
+    create unique_index(:events, [:id, "created_at DESC"])
 
     create_partitions()
   end

@@ -19,7 +19,7 @@ defmodule Nostrex.FastFilterTest do
   end
 
   defp sample_event_params() do
-    %{
+    map = %{
       id: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
       pubkey: "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d",
       # DateTime.utc_now(),
@@ -46,12 +46,13 @@ defmodule Nostrex.FastFilterTest do
           ]
         }
       ],
-      created_at: 1_671_994_854,
+      created_at: 1672531200,
       kind: 1,
       content: "jet fuel can't melt steel beams",
       sig:
         "230e9d8f0ddaf7eb70b5f7741ccfa37e87a455c9a469282e3464e2052d3192cd63a167e196e381ef9d7e69e9ea43af2443b839974dc85d8aaab9efe1d9296524"
     }
+    Map.put(map, :raw, Jason.encode!(map))
   end
 
   test "test filter ets tables get created properly" do
