@@ -1,4 +1,8 @@
 defmodule Nostrex.Events do
+  @moduledoc """
+  Context module for Nostr events
+  """
+
   alias Nostrex.Repo
   alias Nostrex.Events.{Event, Filter}
   import Ecto.Changeset
@@ -22,7 +26,7 @@ defmodule Nostrex.Events do
     |> Repo.insert()
   end
 
-  def get_event_count() do
+  def get_event_count do
     Repo.aggregate(Event, :count)
   end
 

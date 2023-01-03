@@ -3,10 +3,10 @@ defmodule NostrexWeb.NostrSocket do
   require Logger
 
   alias Nostrex.Events
-  alias Nostrex.Events.{Filter}
-  alias Phoenix.PubSub
+  alias Nostrex.Events.Filter
   alias Nostrex.FastFilter
   alias NostrexWeb.MessageParser
+  alias Phoenix.PubSub
 
   @moduledoc """
   Simple Websocket handler that echos back any data it receives
@@ -76,6 +76,7 @@ defmodule NostrexWeb.NostrSocket do
     event_params = MessageParser.parse_and_sanity_check_event_message(req)
 
     Logger.info("Creating event with params #{inspect(event_params)}")
+
     resp =
       case Events.create_event(event_params) do
         {:ok, event} ->
