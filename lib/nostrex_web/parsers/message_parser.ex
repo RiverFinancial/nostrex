@@ -30,7 +30,7 @@ defmodule NostrexWeb.MessageParser do
 
   def generate_event_list_response(events, subscription_id) do
     Enum.reduce(events, ~s'["EVENT","#{subscription_id}"', fn event, acc ->
-      acc <> "," <> event_to_json(event)
+      acc <> "," <> event.raw
     end) <> "]"
   end
 
