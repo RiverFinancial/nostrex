@@ -14,7 +14,8 @@ defmodule Nostrex.Events.Event do
     field :sig, :string
     field :raw, :string
     # raw event json
-    has_many :tags, Tag, preload_order: [asc: :id] # ensures tags get returned in order they are saved
+    # ensures tags get returned in order they are saved
+    has_many :tags, Tag, preload_order: [asc: :id]
     timestamps()
   end
 
@@ -32,7 +33,7 @@ defmodule Nostrex.Events.Event do
     |> validate_length(:sig, is: 64 * 2)
     # required to prevent throwing error on duplicate entry, suffix match required due to postgres
     # automatically adding partition name to index
-    |> unique_constraint([:id, :created_at],name: :id_created_at_idx, match: :suffix)
+    |> unique_constraint([:id, :created_at], name: :id_created_at_idx, match: :suffix)
   end
 
   # Only to be used by tests

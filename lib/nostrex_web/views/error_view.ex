@@ -1,5 +1,5 @@
 defmodule NostrexWeb.ErrorView do
-  use NostrexWeb, :view
+  # use NostrexWeb, :view
 
   # If you want to customize a particular status code
   # for a certain format, you may uncomment below.

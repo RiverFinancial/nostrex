@@ -21,7 +21,7 @@ config :nostrex, NostrexWeb.Endpoint,
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
-  code_reloader: true,
+  code_reloader: false, # TODO: doesn't work with custom dispatch for some reason.
   debug_errors: true,
   secret_key_base: "Ts6DSZ5EsJX2S0RvZM7a+spDfZvQyP7D3jllMdbd+3dEPTy87HIUacYHs3s6VdFb",
   watchers: [

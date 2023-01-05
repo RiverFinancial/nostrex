@@ -10,30 +10,22 @@ import Config
 config :nostrex,
   ecto_repos: [Nostrex.Repo]
 
+dispatch = [
+  {:_,
+   [
+    #  {"/", NostrexWeb.NostrSocket, []},
+    #  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}},
+     {:_, NostrexWeb.Handler, {NostrexWeb.Endpoint, []}},
+   ]}
+]
+
 # Configures the endpoint
 config :nostrex, NostrexWeb.Endpoint,
   url: [host: "localhost"],
   render_errors: [view: NostrexWeb.ErrorView, accepts: ~w(html json), layout: false],
   pubsub_server: Nostrex.PubSub,
-  live_view: [signing_salt: "NimhoO13"]
-
-config :nostrex, NostrexWeb.Endpoint,
-  http: [
-    dispatch: [
-      {:_,
-       [
-         {"/", NostrexWeb.NostrSocket, []}
-         #  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
-       ]}
-    ]
-  ]
-
-# dispatch = [
-#       _: [
-#         {"/websocket", NostrexWeb.NostrSocket, []},
-#         {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}}
-#       ]
-#     ]
+  live_view: [signing_salt: "NimhoO13"],
+  http: [dispatch: dispatch]
 
 # config :nostrex, NostrexWeb.Endpoint,
 #   http: [dispatch: dispatch],

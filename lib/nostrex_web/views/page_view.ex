@@ -1,3 +1,3 @@
 defmodule NostrexWeb.PageView do
-  use NostrexWeb, :view
+  # use NostrexWeb, :view
 end
