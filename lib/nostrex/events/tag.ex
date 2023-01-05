@@ -1,4 +1,8 @@
 defmodule Nostrex.Events.Tag do
+  @moduledoc """
+  Ecto schema for Nostr Event Tags
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
   alias Nostrex.Events.Event
@@ -23,7 +27,7 @@ defmodule Nostrex.Events.Tag do
 
   def event_changeset(tag, attrs, created_at) do
     tag
-    |> cast(%{event_created_at:  created_at}, [:event_created_at])
+    |> cast(%{event_created_at: created_at}, [:event_created_at])
     |> cast(attrs, [:type, :field_1, :field_2, :full_tag])
     |> validate_required([:event_created_at, :type, :field_1, :field_2, :full_tag])
   end

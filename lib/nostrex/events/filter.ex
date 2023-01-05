@@ -1,4 +1,8 @@
 defmodule Nostrex.Events.Filter do
+  @moduledoc """
+  Filtering functions for Events
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
 
@@ -50,23 +54,9 @@ defmodule Nostrex.Events.Filter do
     end
   end
 
-  defp is_empty?([]) do
-    true
-  end
-
-  defp is_empty?(%{}) do
-    true
-  end
-
-  defp is_empty?("") do
-    true
-  end
-
-  defp is_empty?(nil) do
-    true
-  end
-
-  defp is_empty?(_) do
-    false
-  end
+  defp is_empty?([]), do: true
+  defp is_empty?(%{}), do: true
+  defp is_empty?(""), do: true
+  defp is_empty?(nil), do: true
+  defp is_empty?(_), do: false
 end
