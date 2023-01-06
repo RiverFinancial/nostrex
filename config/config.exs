@@ -10,11 +10,15 @@ import Config
 config :nostrex,
   ecto_repos: [Nostrex.Repo]
 
+# NostrexWeb.Handler is a custom handler copying Elixir.Plug.Handler with some extra logic
+# for NIP 5
+
+# Old settings were:
+#  {"/", NostrexWeb.NostrSocket, []},
+#  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}},
 dispatch = [
   {:_,
    [
-    #  {"/", NostrexWeb.NostrSocket, []},
-    #  {:_, Phoenix.Endpoint.Cowboy2Handler, {NostrexWeb.Endpoint, []}},
      {:_, NostrexWeb.Handler, {NostrexWeb.Endpoint, []}},
    ]}
 ]
@@ -27,31 +31,6 @@ config :nostrex, NostrexWeb.Endpoint,
   live_view: [signing_salt: "NimhoO13"],
   http: [dispatch: dispatch]
 
-# config :nostrex, NostrexWeb.Endpoint,
-#   http: [dispatch: dispatch],
-#   https: [dispatch: dispatch]
-
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
-config :nostrex, Nostrex.Mailer, adapter: Swoosh.Adapters.Local
-
-# Swoosh API client is needed for adapters other than SMTP.
-config :swoosh, :api_client, false
-
-# Configure esbuild (the version is required)
-config :esbuild,
-  version: "0.14.29",
-  default: [
-    args:
-      ~w(js/app.js --bundle --target=es2017 --outdir=../priv/static/assets --external:/fonts/* --external:/images/*),
-    cd: Path.expand("../assets", __DIR__),
-    env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
-  ]
 
 # Configures Elixir's Logger
 config :logger, :console,

@@ -10,6 +10,7 @@ defmodule NostrexWeb.Endpoint do
     signing_salt: "2TAgK2Ax"
   ]
 
+  plug NostrexWeb.Router
   # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
   socket "/", NostrexWeb.TestSocket, websocket: [path: "/"]#, longpoll: false
 
@@ -26,16 +27,16 @@ defmodule NostrexWeb.Endpoint do
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
-  if code_reloading? do
+  # if code_reloading? do
     # socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     # plug Phoenix.LiveReloader
     # plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :nostrex
-  end
+    # plug Phoenix.Ecto.CheckRepoStatus, otp_app: :nostrex
+  # end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
+  # plug Phoenix.LiveDashboard.RequestLogger,
+  #   param_key: "request_logger",
+  #   cookie_key: "request_logger"
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
@@ -48,6 +49,4 @@ defmodule NostrexWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug NostrexWeb.Router
-
 end

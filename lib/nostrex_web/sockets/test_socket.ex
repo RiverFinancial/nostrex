@@ -22,10 +22,12 @@ defmodule NostrexWeb.TestSocket do
   end
 
   def handle_in({text, _opts}, state) do
+    IO.puts "IN"
     {:reply, :ok, {:text, text}, state}
   end
 
   def handle_info(_, state) do
+    IO.puts "INFO"
     {:ok, state}
   end
 

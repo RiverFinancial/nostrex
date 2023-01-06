@@ -65,10 +65,10 @@ defmodule NostrexWeb.NostrSocket do
   def websocket_handle(frame, state)
 
   # Implement basic ping pong handler for easy health checking
-  def websocket_handle({:text, "ping"}, state) do
-    Logger.info("Ping endpoint hit")
-    {[text: "pong"], state}
-  end
+  # def websocket_handle({:text, "ping"}, state) do
+  #   Logger.info("Ping endpoint hit")
+  #   {[text: "pong"], state}
+  # end
 
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events

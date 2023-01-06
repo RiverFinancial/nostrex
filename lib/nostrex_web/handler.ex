@@ -5,7 +5,6 @@ defmodule NostrexWeb.Handler do
 
   def init(req, {plug, opts}) do
     conn = @connection.conn(req)
-
     try do
       conn
       |> NostrexWeb.Nip11Plug.call(opts)
