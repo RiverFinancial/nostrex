@@ -58,10 +58,10 @@ The Erlang OTP allowed Whatsapp to scale to billions of users with a small team 
 
 ## Supported NIPS
 - [X] NIP 01 Basic protocol flow description
-- [ ] NIP 02 Contact List and Petnames
-- [ ] NIP 04 Encrypted Direct Message
+- [X] NIP 02 Contact List and Petnames
+- [X] NIP 04 Encrypted Direct Message
 - [ ] NIP 09 Event Deletion
-- [ ] NIP 11 Relay Information Document
+- [X] NIP 11 Relay Information Document
 - [ ] NIP 12 Generic Tag Queries
 - [ ] NIP 15 End of Stored Events Notice
 - [ ] NIP 20 Command Results
