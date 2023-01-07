@@ -1,4 +1,8 @@
 defmodule NostrexWeb.MessageParser do
+  @moduledoc """
+  Nostr event message parser module
+  """
+
   alias Nostrex.Events.Event
 
   @doc """

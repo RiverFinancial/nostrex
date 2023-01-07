@@ -51,7 +51,7 @@ defmodule NostrexWeb.NostrSocketTest do
     req_msg =
       ~s'["REQ", "1234", {"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"], "until": #{future_time}}, {"authors": ["auth2"], "until": #{past_time}}]'
 
-    assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
+    assert Enum.empty?(:ets.tab2list(:nostrex_ff_pubkeys))
 
     # {[text: resp], new_state} = NostrSocket.websocket_handle({:text, req_msg}, state)
     WebsocketClient.send(client, {:text, req_msg})
@@ -71,7 +71,7 @@ defmodule NostrexWeb.NostrSocketTest do
     # necessary to give time for ets table to clear
     refute_receive({:text, "" <> _}, 100)
 
-    assert Enum.count(:ets.tab2list(:nostrex_ff_pubkeys)) == 0
+    assert Enum.empty?(:ets.tab2list(:nostrex_ff_pubkeys))
   end
 
   test "REQ message for historical events", %{client: client} do

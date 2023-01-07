@@ -3,10 +3,10 @@ defmodule NostrexWeb.NostrSocket do
   require Logger
 
   alias Nostrex.Events
-  alias Nostrex.Events.{Filter}
-  alias Phoenix.PubSub
+  alias Nostrex.Events.Filter
   alias Nostrex.FastFilter
   alias NostrexWeb.MessageParser
+  alias Phoenix.PubSub
 
   @moduledoc """
   Simple Websocket handler that echos back any data it receives

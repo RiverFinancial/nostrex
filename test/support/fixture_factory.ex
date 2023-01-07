@@ -1,4 +1,8 @@
 defmodule Nostrex.FixtureFactory do
+  @moduledoc """
+  Fixture Factory
+  """
+
   alias Nostrex.Events
   alias Nostrex.Events.Filter
 
@@ -80,7 +84,7 @@ defmodule Nostrex.FixtureFactory do
     |> apply_action!(:update)
   end
 
-  defp rand_identifier() do
+  defp rand_identifier do
     :crypto.hash(:sha256, Integer.to_string(:rand.uniform(99_999_999_999)))
     |> Base.encode16()
     |> String.downcase()

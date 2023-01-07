@@ -25,7 +25,7 @@ defmodule Nostrex.Repo.Migrations.CreateEvents do
 
   def create_partitions() do
     timestamp_list()
-    |> Enum.with_index(fn date, index ->
+    |> Enum.with_index(fn _date, index ->
       unless index == 0 do
         list = timestamp_list()
         start_date = Enum.at(list, index - 1)

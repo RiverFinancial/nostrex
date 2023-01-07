@@ -1,4 +1,8 @@
 defmodule Nostrex.Events.Tag do
+  @moduledoc """
+  Ecto schema for Nostr Event Tags
+  """
+
   use Ecto.Schema
   import Ecto.Changeset
   alias Nostrex.Events.Event
