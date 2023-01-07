@@ -18,10 +18,10 @@ config :nostrex, Nostrex.Repo,
 config :nostrex, NostrexWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
   secret_key_base: "ZgfYdt6wG7krFmD52nX/CZk54aj6Br9BOl23Ut7YJePP2DpA+tVJIN/lAOzT0CTO",
-  server: false
+  server: true
 
 # In test we don't send emails.
-config :nostrex, Nostrex.Mailer, adapter: Swoosh.Adapters.Test
+# config :nostrex, Nostrex.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
 config :logger, level: :warn

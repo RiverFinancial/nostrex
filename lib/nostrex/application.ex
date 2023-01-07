@@ -12,10 +12,10 @@ defmodule Nostrex.Application do
       Nostrex.Repo,
       # Start the Telemetry supervisor
       NostrexWeb.Telemetry,
+      # Start the PubSub system
+      {Phoenix.PubSub, name: Nostrex.PubSub},
       # Start fast filter table manager
       Nostrex.FastFilterTableManager,
-      # Start the PubSub system
-      {Phoenix.PubSub, name: :nostrex_pubsub},
       # Start the Endpoint (http/https)
       NostrexWeb.Endpoint
       # Start a worker by calling: Nostrex.Worker.start_link(arg)

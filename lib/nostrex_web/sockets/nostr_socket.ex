@@ -12,7 +12,14 @@ defmodule NostrexWeb.NostrSocket do
   Simple Websocket handler that echos back any data it receives
   """
 
-  @behaviour :cowboy_websocket
+  # @behaviour :cowboy_websocket
+  @behaviour Phoenix.Socket.Transport
+
+  @impl true
+  def child_spec(_opts) do
+    # We won't spawn any process, so let's return a dummy task
+    %{id: __MODULE__, start: {Task, :start_link, [fn -> :ok end]}, restart: :transient}
+  end
 
   # entry point of the websocket socket.
   # WARNING: this is where you would need to do any authentication
@@ -21,22 +28,23 @@ defmodule NostrexWeb.NostrSocket do
   #
   # WARNING: this function is NOT called in the same process context as the rest of the functions
   #          defined in this module. This is notably dissimilar to other gen_* behaviours.
-  # Phoenix.PubSub.broadcast(:nostrex_pubsub, "test", %{a: 1})
-  @impl :cowboy_websocket
-  def init(req, opts) do
+  # Phoenix.PubSub.broadcast(Nostrex.PubSub, "test", %{a: 1})
+  # @impl :cowboy_websocket
+  @impl true
+  def connect(state) do
     Logger.info("Starting cowboy websocket server")
     # TODO: look at limiting max frame size here
     # NOTE: idle timeout default is 60s to save resources
-    {:cowboy_websocket, req, opts}
+    {:ok, state}
   end
 
   # as long as `init/2` returned `{:cowboy_websocket, req, opts}`
   # this function will be called. You can begin sending packets at this point.
   # We'll look at how to do that in the `websocket_handle` function however.
   # This function is where you might want to  implement `Phoenix.Presence`, schedule an `after_join` message etc.
-  @impl :cowboy_websocket
-  def websocket_init(state) do
-    Logger.info("Websocket init state: #{state}")
+  @impl true
+  def init(state) do
+    Logger.info("Websocket init state: #{inspect(state)}")
 
     initial_state = %{
       event_count: 0,
@@ -44,7 +52,7 @@ defmodule NostrexWeb.NostrSocket do
       subscriptions: %{}
     }
 
-    {[], initial_state}
+    {:ok, initial_state}
   end
 
   # `websocket_handle` is where data from a client will be received.
@@ -60,18 +68,19 @@ defmodule NostrexWeb.NostrSocket do
   #     {[reply_frame1, reply_frame2, ....], state}
   #
   # where `reply_frame` is the same format as what is delivered.
-  @impl :cowboy_websocket
-  def websocket_handle(frame, state)
+  @impl true
+  def handle_in(frame, state)
 
   # Implement basic ping pong handler for easy health checking
-  def websocket_handle({:text, "ping"}, state) do
+  def handle_in({"ping", _opts}, state) do
     Logger.info("Ping endpoint hit")
-    {[text: "pong"], state}
+    # {[text: "pong"], state}
+    {:reply, :ok, {:text, "pong"}, state}
   end
 
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events
-  def websocket_handle({:text, req = "[\"EVENT\"," <> _}, state) do
+  def handle_in({req = "[\"EVENT\"," <> _, _opts}, state) do
     Logger.info("Inbound EVENT message: #{req}")
     event_params = MessageParser.parse_and_sanity_check_event_message(req)
 
@@ -90,7 +99,7 @@ defmodule NostrexWeb.NostrSocket do
 
     new_state = increment_state_counter(state, :event_count)
 
-    {[text: resp], new_state}
+    {:reply, :ok, {:text, resp}, new_state}
   end
 
   @doc """
@@ -98,7 +107,7 @@ defmodule NostrexWeb.NostrSocket do
   and also grows the in-memory PubSub state. It's used by clients
   to query and subscribe to events based on a filter
   """
-  def websocket_handle({:text, req = "[\"REQ\"," <> _}, state) do
+  def handle_in({req = "[\"REQ\"," <> _, _opts}, state) do
     Logger.info("Inbound REQ message: #{req}")
 
     {:ok, list} = Jason.decode(req, keys: :atoms)
@@ -112,15 +121,15 @@ defmodule NostrexWeb.NostrSocket do
 
     resp = gen_notice("successfully created subscription #{subscription_id}")
 
-    {[text: resp], new_state}
+    {:reply, :ok, {:text, resp}, new_state}
   end
 
-  # Handles all Nostr [CLOSE] messages. This endpoint is very DB read heavy
+  # Handles all Nostr [CLOSE] messages. This endpoint is very ETS read heavy
   # and also grows the in-memory PubSub state. This message includes a subscription
   # id, but we need to be sure we're only closing the subscription ids that belong to this
   # channel, otherwise we open ourselves up to somebody spamming in an attempt to close
   # subscriptions for other clients
-  def websocket_handle({:text, req = "[\"CLOSE\"," <> _}, state) do
+  def handle_in({req = "[\"CLOSE\"," <> _, _opts}, state) do
     Logger.info("Inbound Close message #{req}")
 
     {:ok, list} = Jason.decode(req)
@@ -128,28 +137,24 @@ defmodule NostrexWeb.NostrSocket do
     # TODO, validate subscription ID
     subscription_id = Enum.at(list, 1)
     remove_subscription(state, subscription_id)
+    close_msg = gen_notice("Closed subscription #{subscription_id}")
 
-    {[close: "success"], state}
+    {:reply, :ok, {:text, close_msg}, state}
   end
-
-  # # a message was delivered from a client. Here we handle it by just echoing it back
-  # # to the client.
-  # def websocket_handle({:text, message}, state) do
-  # 	{[{:text, message}], state}
-  # end
 
   # # This function is where we will process all *other* messages that get delivered to the
   # # process mailbox. This function isn't used in this handler.
-  @impl :cowboy_websocket
-  def websocket_info(info, state)
+  @impl true
+  def handle_info(info, state)
 
-  def websocket_info({:events, events, subscription_id}, state) when is_list(events) do
+  def handle_info({:events, events, subscription_id}, state) when is_list(events) do
     Logger.info("Sending events #{inspect(events)} to subscription #{subscription_id}")
     event_json = MessageParser.generate_event_list_response(events, subscription_id)
-    {[text: event_json], state}
+    # {:ok, [text: event_json], state}
+    {:push, {:text, event_json}, state}
   end
 
-  def websocket_info(info, state) do
+  def handle_info(info, state) do
     msgs = Process.info(self(), :messages)
 
     Logger.error("""
@@ -159,16 +164,16 @@ defmodule NostrexWeb.NostrSocket do
     #{inspect(msgs)}
     """)
 
-    {[text: "handling shouldn't be called"], state}
+    {:ok, state}
   end
 
   # placeholder catch all
-  def handle_info(_) do
-    Logger.info("Catch-all handle_info called")
-  end
+  # def handle_info(_) do
+  #   Logger.info("Catch-all handle_info called")
+  # end
 
   @impl true
-  def terminate(_reason, _partial_req, state) do
+  def terminate(_, state) do
     ## Ensure any state gets cleaned up before terminating
     state.subscriptions
     |> Enum.each(fn {sub_id, _set} ->
@@ -191,7 +196,7 @@ defmodule NostrexWeb.NostrSocket do
   defp handle_req_event(state, subscription_id, unsanitized_filter_params) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
-    PubSub.subscribe(:nostrex_pubsub, subscription_id)
+    PubSub.subscribe(Nostrex.PubSub, subscription_id)
 
     # TODO check subscription doesn't already exist
     state = put_in(state, [:subscriptions, subscription_id], MapSet.new())

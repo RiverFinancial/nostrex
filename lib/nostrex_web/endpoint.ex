@@ -10,7 +10,9 @@ defmodule NostrexWeb.Endpoint do
     signing_salt: "2TAgK2Ax"
   ]
 
-  # socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+  # plug NostrexWeb.Router
+  # define root path socket
+  socket "/", NostrexWeb.NostrSocket, websocket: [path: "/"]
 
   # Serve at "/" the static files from "priv/static" directory.
   #
@@ -24,16 +26,16 @@ defmodule NostrexWeb.Endpoint do
 
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
-  if code_reloading? do
-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-    plug Phoenix.LiveReloader
-    plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :nostrex
-  end
+  # if code_reloading? do
+  # socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+  # plug Phoenix.LiveReloader
+  # plug Phoenix.CodeReloader
+  # plug Phoenix.Ecto.CheckRepoStatus, otp_app: :nostrex
+  # end
 
-  plug Phoenix.LiveDashboard.RequestLogger,
-    param_key: "request_logger",
-    cookie_key: "request_logger"
+  # plug Phoenix.LiveDashboard.RequestLogger,
+  #   param_key: "request_logger",
+  #   cookie_key: "request_logger"
 
   plug Plug.RequestId
   plug Plug.Telemetry, event_prefix: [:phoenix, :endpoint]
@@ -46,5 +48,4 @@ defmodule NostrexWeb.Endpoint do
   plug Plug.MethodOverride
   plug Plug.Head
   plug Plug.Session, @session_options
-  plug NostrexWeb.Router
 end

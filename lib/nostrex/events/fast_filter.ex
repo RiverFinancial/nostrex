@@ -296,7 +296,7 @@ defmodule Nostrex.FastFilter do
     kind_match? = event.kind in kinds or kinds == []
     # only broadcast if not already broadcast to this subscription id
     unless MapSet.member?(already_broadcast_sub_ids, subscription_id) or !kind_match? do
-      PubSub.broadcast(:nostrex_pubsub, subscription_id, {:events, [event], subscription_id})
+      PubSub.broadcast(Nostrex.PubSub, subscription_id, {:events, [event], subscription_id})
     end
   end
 end

@@ -133,7 +133,7 @@ defmodule Nostrex.FastFilterTest do
       '{"authors":["3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d"]}'
 
     filter = FixtureFactory.create_filter_from_string(filter_string)
-    PubSub.subscribe(:nostrex_pubsub, filter.subscription_id)
+    PubSub.subscribe(Nostrex.PubSub, filter.subscription_id)
 
     FastFilter.insert_filter(filter)
 
@@ -162,7 +162,7 @@ defmodule Nostrex.FastFilterTest do
 
     # setup subscription
     sub_id = "123"
-    PubSub.subscribe(:nostrex_pubsub, sub_id)
+    PubSub.subscribe(Nostrex.PubSub, sub_id)
 
     for f <- filter_set_1 do
       filter = FixtureFactory.create_filter_from_string(f, sub_id)

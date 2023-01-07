@@ -4,7 +4,7 @@ defmodule NostrexWeb.MessageParserTest do
   alias Nostrex.Events
   alias Nostrex.FixtureFactory
 
-  defp sample_event_params do
+  defp sample_event_params() do
     map = %{
       id: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
       pubkey: "3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d",

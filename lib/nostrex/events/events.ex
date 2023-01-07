@@ -56,7 +56,7 @@ defmodule Nostrex.Events do
     Logger.info("Returning #{Enum.count(events)} events to subscriber #{subscription_id}")
     # TODO: look at chunking this up if the response sizes are too large
     PubSub.broadcast!(
-      :nostrex_pubsub,
+      Nostrex.PubSub,
       subscription_id,
       {:events, events, subscription_id}
     )
