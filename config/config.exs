@@ -19,7 +19,7 @@ config :nostrex,
 dispatch = [
   {:_,
    [
-     {:_, NostrexWeb.Handler, {NostrexWeb.Endpoint, []}},
+     {:_, NostrexWeb.Handler, {NostrexWeb.Endpoint, []}}
    ]}
 ]
 
@@ -30,7 +30,6 @@ config :nostrex, NostrexWeb.Endpoint,
   pubsub_server: Nostrex.PubSub,
   live_view: [signing_salt: "NimhoO13"],
   http: [dispatch: dispatch]
-
 
 # Configures Elixir's Logger
 config :logger, :console,

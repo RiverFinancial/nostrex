@@ -7,6 +7,7 @@ defmodule NostrexWeb.Nip11Plug do
 
   def call(conn, _opts) do
     accept_header = Enum.at(get_req_header(conn, "accept"), 0)
+
     if accept_header == "application/nostr+json" do
       conn
       |> send_resp(200, get_nip11_json())
@@ -22,9 +23,10 @@ defmodule NostrexWeb.Nip11Plug do
       description: "Nostrex relay by River.com",
       pubkey: "npub139nl9yxvwayl60fr97m3zrq9md6x5v0uup344mkyuyg6mzlusyxs4zkwf4",
       contact: "N/A",
-      supported_nips: [1,4],
+      supported_nips: [1, 4],
       software: "https://github.com/RiverFinancial/nostrex",
       version: "0.0.1"
-    } |> Jason.encode!()
+    }
+    |> Jason.encode!()
   end
 end

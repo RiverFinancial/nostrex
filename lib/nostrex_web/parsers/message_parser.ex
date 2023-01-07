@@ -11,19 +11,20 @@ defmodule NostrexWeb.MessageParser do
     event_params = Enum.at(list, 1)
     raw_event = Jason.encode!(event_params)
 
-    map = event_params
-    |> Map.update(:tags, [], fn tags ->
-      if tags == nil or tags == [] do
-        []
-      else
-        # convert tag list to map list for embedded object creation
+    map =
+      event_params
+      |> Map.update(:tags, [], fn tags ->
+        if tags == nil or tags == [] do
+          []
+        else
+          # convert tag list to map list for embedded object creation
 
-        tags
-        |> Enum.map(fn tag ->
-          list_to_tag_params(tag)
-        end)
-      end
-    end)
+          tags
+          |> Enum.map(fn tag ->
+            list_to_tag_params(tag)
+          end)
+        end
+      end)
 
     Map.put(map, :raw, raw_event)
   end

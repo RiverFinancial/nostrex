@@ -31,7 +31,7 @@ defmodule Nostrex.EventsTest do
           ]
         }
       ],
-      created_at: 1672531200,
+      created_at: 1_672_531_200,
       kind: 1,
       content: "jet fuel can't melt steel beams",
       sig:
@@ -72,12 +72,15 @@ defmodule Nostrex.EventsTest do
   end
 
   test "tags get saved in order in db" do
-    p_tags = Enum.map(1..100, fn i ->
-      "#{i}"
-    end)
-    e_tags = Enum.map(101..200, fn i ->
-      "#{i}"
-    end)
+    p_tags =
+      Enum.map(1..100, fn i ->
+        "#{i}"
+      end)
+
+    e_tags =
+      Enum.map(101..200, fn i ->
+        "#{i}"
+      end)
 
     field_1_expectation = p_tags ++ e_tags
 
