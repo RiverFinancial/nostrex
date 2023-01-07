@@ -100,7 +100,7 @@ defmodule NostrexWeb.NostrSocketTest do
     req_msg = ~s'["REQ", "#{sub_id}", {"authors":["#{event.pubkey}"]}]'
 
     # test that it receives historical events
-    PubSub.subscribe(:nostrex_pubsub, sub_id)
+    PubSub.subscribe(Nostrex.PubSub, sub_id)
     refute_received({:events, _, _})
 
     {[text: resp], new_state} = NostrSocket.websocket_handle({:text, req_msg}, state)

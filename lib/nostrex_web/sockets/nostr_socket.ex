@@ -22,7 +22,7 @@ defmodule NostrexWeb.NostrSocket do
   #
   # WARNING: this function is NOT called in the same process context as the rest of the functions
   #          defined in this module. This is notably dissimilar to other gen_* behaviours.
-  # Phoenix.PubSub.broadcast(:nostrex_pubsub, "test", %{a: 1})
+  # Phoenix.PubSub.broadcast(Nostrex.PubSub, "test", %{a: 1})
   @impl :cowboy_websocket
   def init(req, opts) do
     Logger.info("Starting cowboy websocket server")
@@ -65,10 +65,10 @@ defmodule NostrexWeb.NostrSocket do
   def websocket_handle(frame, state)
 
   # Implement basic ping pong handler for easy health checking
-  # def websocket_handle({:text, "ping"}, state) do
-  #   Logger.info("Ping endpoint hit")
-  #   {[text: "pong"], state}
-  # end
+  def websocket_handle({:text, "ping"}, state) do
+    Logger.info("Ping endpoint hit")
+    {[text: "pong"], state}
+  end
 
   # Handles all Nostr [EVENT] messages. This endpoint is very DB write heavy
   # and is called by clients to publishing new Nostr events
@@ -192,7 +192,7 @@ defmodule NostrexWeb.NostrSocket do
   defp handle_req_event(state, subscription_id, unsanitized_filter_params) do
     # TODO move to safer place to only happen for future subscriptions, not all
     # register the subscriber
-    PubSub.subscribe(:nostrex_pubsub, subscription_id)
+    PubSub.subscribe(Nostrex.PubSub, subscription_id)
 
     # TODO check subscription doesn't already exist
     state = put_in(state, [:subscriptions, subscription_id], MapSet.new())

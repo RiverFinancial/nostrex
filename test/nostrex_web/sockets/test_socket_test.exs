@@ -14,7 +14,7 @@ defmodule NostrexWeb.TestSocketTest do
 
 
   test "ping pong" do
-    IO.puts "BEFORE CONNECT"
+    # IO.puts "BEFORE CONNECT"
     # send(self(), "test")
     assert {:ok, client} = WebsocketClient.connect(self(), "ws://127.0.0.1:4002/", :noop)
     WebsocketClient.send(client, {:text, "abc"})
