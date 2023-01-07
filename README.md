@@ -51,7 +51,6 @@ The Erlang OTP allowed Whatsapp to scale to billions of users with a small team 
 - [ ] Validate event signatures (waiting on Bitcoinex lib updates)
 - [ ] Remove unused boilerplate code
 - [ ] Add prometheus monitoring
-- [ ] Implement NIP
 - [ ] Cleanup messy tests and add proper socket integration tests
 - [ ] Create better filter tests to uncover any remaining edge cases
 - [ ] Load test with something like Tsung
