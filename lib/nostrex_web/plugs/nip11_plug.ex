@@ -10,6 +10,9 @@ defmodule NostrexWeb.Nip11Plug do
 
     if accept_header == "application/nostr+json" do
       conn
+      |> put_resp_header("Access-Control-Allow-Origin", "*")
+      |> put_resp_header("Access-Control-Allow-Headers", "*")
+      |> put_resp_header("Access-Control-Allow-Methods", "*")
       |> send_resp(200, get_nip11_json())
       |> halt()
     else
