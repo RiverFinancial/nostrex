@@ -1,0 +1,33 @@
+config:
+  target: "wss://nostrex.fly.dev"
+  processor: "./load_test.js"
+  phases:
+    - duration: 60
+      arrivalRate: 100
+      name: Warm up
+  # payload:
+    # path: "messages.csv"
+    # fields:
+    #  - "not applicable"
+
+scenarios:
+  - name: "test scenario"
+    engine: ws
+    flow:
+      - connect: "{{ target }}"
+      - loop:
+        - function: "createMessage"
+        - send: "{{ message }}"
+        count: 5
+      - loop:
+        - function: "createSubscription"
+        - send: "{{ message }}"
+        count: 2
+      - loop:
+        - function: "createMessage"
+        - send: "{{ message }}"
+        count: 50
+      
+
+
+
