@@ -1,9 +1,10 @@
 config:
-  target: "wss://nostrex.fly.dev"
+  # target: "wss://nostrex.fly.dev"
+  target: "ws://localhost:4000"
   processor: "./load_test.js"
   phases:
-    - duration: 60
-      arrivalRate: 100
+    - duration: 20
+      arrivalRate: 10
       name: Warm up
   # payload:
     # path: "messages.csv"

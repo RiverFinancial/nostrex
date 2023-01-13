@@ -33,6 +33,7 @@ defmodule NostrexWeb.NostrSocket do
   @impl true
   def connect(state) do
     Logger.info("Starting cowboy websocket server")
+    Telemetry.Metrics.counter("nostrex.socket.open")
     # TODO: look at limiting max frame size here
     # NOTE: idle timeout default is 60s to save resources
     {:ok, state}
@@ -179,6 +180,8 @@ defmodule NostrexWeb.NostrSocket do
     |> Enum.each(fn {sub_id, _set} ->
       remove_subscription(state, sub_id)
     end)
+
+    Telemetry.Metrics.counter("nostrex.socket.open")
 
     Logger.info("Websocket terminate called with state: #{inspect(state)}")
     :ok

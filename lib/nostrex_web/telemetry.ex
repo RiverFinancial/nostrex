@@ -32,6 +32,10 @@ defmodule NostrexWeb.Telemetry do
         unit: {:native, :millisecond}
       ),
 
+      # Socket Metrics
+      summary("nostrex.socket.open"),
+      summary("nostrex.socket.close"),
+
       # Database Metrics
       summary("nostrex.repo.query.total_time",
         unit: {:native, :millisecond},

@@ -23,14 +23,16 @@ Nostrex takes full advantage of the Erlang OTP's ETS in-memory datastore as the 
 
 The Erlang OTP allowed Whatsapp to scale to billions of users with a small team of engineers. With the right optimizations I feel confident that a single beefy Nostr instance will be able to power millions of concurrent connections.
 
+### Load testing
+
+Load testing tooling is located in the `/load_testing` repo.
+
 
 ## TODOs for being production ready
 - [ ] Validate event signatures (waiting on Bitcoinex lib updates)
 - [ ] Remove unused boilerplate code
 - [ ] Add prometheus monitoring
-- [ ] Cleanup messy tests and add proper socket integration tests
 - [ ] Create better filter tests to uncover any remaining edge cases
-- [ ] Load test with something like Tsung
 
 ## Supported NIPS
 - [X] NIP 01 Basic protocol flow description

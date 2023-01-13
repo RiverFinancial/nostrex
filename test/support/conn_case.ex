@@ -11,6 +11,7 @@ defmodule NostrexWeb.ConnCase do
   we enable the SQL sandbox, so changes done to the database
   are reverted at the end of every test. If you are using
   PostgreSQL, you can even run database tests asynchronously
+
   by setting `use NostrexWeb.ConnCase, async: true`, although
   this option is not recommended for other databases.
   """

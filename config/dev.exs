@@ -27,7 +27,7 @@ config :nostrex, NostrexWeb.Endpoint,
   secret_key_base: "Ts6DSZ5EsJX2S0RvZM7a+spDfZvQyP7D3jllMdbd+3dEPTy87HIUacYHs3s6VdFb"
 
 # watchers: [
-#   # Start the esbuild watcher by calling Esbuild.install_and_run(:default, args)
+#   # Start the esbuild watchee by calling Esbuild.install_and_run(:default, args)
 #   esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]}
 # ]
 
