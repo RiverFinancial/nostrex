@@ -3,30 +3,6 @@
 
 WARNING: Nostrex is still alpha software, has bugs, and will have backwards incompatible database changes. Do not use it for a production system.
 
-## Setup
-
-```elixir
-$ git clone git@github.com:RiverFinancial/nostrex.git
-$ cd nostrex
-$ docker-compose up -d
-$ mix deps.get && mix ecto.migrate
-$ iex -S mix phx.server
-```
-
-If you're using `asdf` you will need to run `asdf install` after you're in the project root directory.
-
-If you're not using the DB provided by docker compose you can create a local development configuration file called `local.exs` and configure the database values in there.
-
-For example:
-
-``` elixir
-# config/local.exs
-
-# local DB port
-config :nostrex, Nostrex.Repo,
-  port: "5234",
-```
-
 ## About
 
 Nostrex is a Nostr relay written in Elixir using the Phoenix framework. It is designed to be highly scalable to handle the rapid adoption of the Nostr protocol. Nostrex has a number of qualities and features that make it a compelling relay implementation.
@@ -46,6 +22,7 @@ Nostrex takes full advantage of the Erlang OTP's ETS in-memory datastore as the 
 ### Solid Foundation
 
 The Erlang OTP allowed Whatsapp to scale to billions of users with a small team of engineers. With the right optimizations I feel confident that a single beefy Nostr instance will be able to power millions of concurrent connections.
+
 
 ## TODOs for being production ready
 - [ ] Validate event signatures (waiting on Bitcoinex lib updates)

@@ -6,7 +6,6 @@ config :nostrex, Nostrex.Repo,
   password: "postgres",
   hostname: "localhost",
   database: "nostrex_dev",
-  port: "5500",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
@@ -76,7 +75,3 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
-
-if File.exists?("config/local.exs") do
-  import_config "local.exs"
-end
