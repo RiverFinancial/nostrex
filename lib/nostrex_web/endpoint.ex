@@ -12,7 +12,8 @@ defmodule NostrexWeb.Endpoint do
 
   # plug NostrexWeb.Router
   # define root path socket
-  socket "/", NostrexWeb.NostrSocket, websocket: [path: "/", connect_info: [:peer_data]]
+  socket "/", NostrexWeb.NostrSocket,
+    websocket: [path: "/", connect_info: [:peer_data, :x_headers]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #

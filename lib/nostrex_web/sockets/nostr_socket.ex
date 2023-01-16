@@ -25,7 +25,9 @@ defmodule NostrexWeb.NostrSocket do
   def connect(state) do
     socket_rate_limit = Application.fetch_env!(:nostrex, :socket_rate_limit)
 
-    ip_address = ip_tuple_to_str(state.connect_info.peer_data.address)
+    Logger.info("Client connection attempt: #{inspect(state)}")
+
+    ip_address = get_ip_from_state(state)
 
     case Hammer.check_rate("socket:#{ip_address}", 60_000, socket_rate_limit) do
       {:allow, _count} ->
@@ -45,7 +47,7 @@ defmodule NostrexWeb.NostrSocket do
 
     initial_state = %{
       subscriptions: %{},
-      ip: ip_tuple_to_str(state.connect_info.peer_data.address)
+      ip: get_ip_from_state(state)
     }
 
     {:ok, initial_state}
@@ -254,7 +256,18 @@ defmodule NostrexWeb.NostrSocket do
     ~s(["NOTICE", "#{message}"])
   end
 
-  defp ip_tuple_to_str({a, b, c, d}) do
-    "#{a}.#{b}.#{c}.#{d}"
+  # TODO make IP setting/header configurable since not all infra will be the same
+  defp get_ip_from_state(state) do
+    x_forwarded_for =
+      state.connect_info.x_headers
+      |> Enum.find(fn x -> elem(x, 0) == "x-forwarded-for" end)
+
+    case x_forwarded_for do
+      nil ->
+        state.connect_info.peer_data.address |> :inet.ntoa() |> to_string()
+
+      _ ->
+        elem(x_forwarded_for, 1)
+    end
   end
 end

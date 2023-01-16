@@ -1,5 +1,6 @@
 defmodule NostrexWeb.Handler do
   @moduledoc false
+  require Logger
   @connection Plug.Cowboy.Conn
   @already_sent {:plug_conn, :sent}
 
