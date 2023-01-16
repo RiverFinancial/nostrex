@@ -1,11 +1,7 @@
 
 # Nostrex
 
-WARNING: Nostrex is still alpha software, has bugs, and will have backwards incompatible database changes. Do not use it for a production system.
-
-## About
-
-Nostrex is a Nostr relay written in Elixir using the Phoenix framework. It is designed to be highly scalable to handle the rapid adoption of the Nostr protocol. Nostrex has a number of qualities and features that make it a compelling relay implementation.
+Nostrex is a Nostr relay written in Elixir. It is designed to be highly scalable and very operator-friendly to empower the rapid adoption of the Nostr protocol. Nostrex has a number of qualities and features that make it a compelling relay implementation.
 
 ### Concurrency
 
@@ -22,6 +18,10 @@ Nostrex takes full advantage of the Erlang OTP's ETS in-memory datastore as the 
 ### Solid Foundation
 
 The Erlang OTP allowed Whatsapp to scale to billions of users with a small team of engineers. With the right optimizations I feel confident that a single beefy Nostr instance will be able to power millions of concurrent connections.
+
+### Rate limiting
+
+IP-based rate limiting for sockets, filters, and events is implemented and configurable.
 
 ### Load testing
 

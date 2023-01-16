@@ -10,6 +10,16 @@ import Config
 config :nostrex,
   ecto_repos: [Nostrex.Repo]
 
+# Setup default configs for Hammer (rate limiting library)
+config :hammer,
+  backend: {Hammer.Backend.ETS, [expiry_ms: 60_000 * 60 * 4, cleanup_interval_ms: 60_000 * 10]}
+
+# all rate limits expressed as count per minute
+config :nostrex,
+  socket_rate_limit: 10,
+  event_rate_limit: 10,
+  filter_rate_limit: 50
+
 # NostrexWeb.Handler is a custom handler copying Elixir.Plug.Handler with some extra logic
 # for NIP 5
 

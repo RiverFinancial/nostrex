@@ -1,5 +1,6 @@
 defmodule NostrexWeb.NostrSocket do
   # NOT USING Phoenix.Socket because it requires a proprietary wire protocol that is incompatible with Nostr
+  # Implementing a custom module with the Phoenix.Socket.Transport behaviour instead
   require Logger
 
   alias Nostrex.Events
@@ -9,10 +10,9 @@ defmodule NostrexWeb.NostrSocket do
   alias Phoenix.PubSub
 
   @moduledoc """
-  Simple Websocket handler that echos back any data it receives
+    Module implementing core socket relay interface for clients
   """
 
-  # @behaviour :cowboy_websocket
   @behaviour Phoenix.Socket.Transport
 
   @impl true
@@ -21,61 +21,42 @@ defmodule NostrexWeb.NostrSocket do
     %{id: __MODULE__, start: {Task, :start_link, [fn -> :ok end]}, restart: :transient}
   end
 
-  # entry point of the websocket socket.
-  # WARNING: this is where you would need to do any authentication
-  #          and authorization. Since this handler is invoked BEFORE
-  #          our Phoenix router, it will NOT follow your pipelines defined there.
-  #
-  # WARNING: this function is NOT called in the same process context as the rest of the functions
-  #          defined in this module. This is notably dissimilar to other gen_* behaviours.
-  # Phoenix.PubSub.broadcast(Nostrex.PubSub, "test", %{a: 1})
-  # @impl :cowboy_websocket
   @impl true
   def connect(state) do
-    Logger.info("Starting cowboy websocket server")
-    Telemetry.Metrics.counter("nostrex.socket.open")
-    # TODO: look at limiting max frame size here
-    # NOTE: idle timeout default is 60s to save resources
-    {:ok, state}
+    socket_rate_limit = Application.fetch_env!(:nostrex, :socket_rate_limit)
+
+    ip_address = ip_tuple_to_str(state.connect_info.peer_data.address)
+
+    case Hammer.check_rate("socket:#{ip_address}", 60_000, socket_rate_limit) do
+      {:allow, _count} ->
+        Logger.info("Connecting with state #{inspect(state)}")
+        Telemetry.Metrics.counter("nostrex.socket.open")
+        {:ok, state}
+
+      {:deny, _limit} ->
+        Logger.info("Socket rate limit exceeded #{inspect(state)}")
+        {:error, state}
+    end
   end
 
-  # as long as `init/2` returned `{:cowboy_websocket, req, opts}`
-  # this function will be called. You can begin sending packets at this point.
-  # We'll look at how to do that in the `websocket_handle` function however.
-  # This function is where you might want to  implement `Phoenix.Presence`, schedule an `after_join` message etc.
   @impl true
   def init(state) do
     Logger.info("Websocket init state: #{inspect(state)}")
 
     initial_state = %{
-      event_count: 0,
-      req_count: 0,
-      subscriptions: %{}
+      subscriptions: %{},
+      ip: ip_tuple_to_str(state.connect_info.peer_data.address)
     }
 
     {:ok, initial_state}
   end
 
-  # `websocket_handle` is where data from a client will be received.
-  # a `frame` will be delivered in one of a few shapes depending on what the client sent:
-  #
-  #     :ping
-  #     :pong
-  #     {:text, data}
-  #     {:binary, data}
-  #
-  # Similarly, the return value of this function is similar:
-  #
-  #     {[reply_frame1, reply_frame2, ....], state}
-  #
-  # where `reply_frame` is the same format as what is delivered.
   @impl true
   def handle_in(frame, state)
 
   # Implement basic ping pong handler for easy health checking
   def handle_in({"ping", _opts}, state) do
     Logger.info("Ping endpoint hit")
-    # {[text: "pong"], state}
     {:reply, :ok, {:text, "pong"}, state}
   end
 
@@ -87,20 +68,27 @@ defmodule NostrexWeb.NostrSocket do
 
     Logger.info("Creating event with params #{inspect(event_params)}")
 
-    resp =
-      case Events.create_event(event_params) do
-        {:ok, event} ->
-          FastFilter.process_event(event)
-          gen_notice("successfully created event #{event.id}")
+    event_rate_limit = Application.fetch_env!(:nostrex, :event_rate_limit)
 
-        {:error, errors} ->
-          Logger.error("failed to save event #{inspect(errors)}")
-          gen_notice("error: unable to save event")
+    resp =
+      case Hammer.check_rate("event:#{state.ip}", 60_000, event_rate_limit) do
+        {:allow, _count} ->
+          case Events.create_event(event_params) do
+            {:ok, event} ->
+              FastFilter.process_event(event)
+              gen_notice("successfully created event #{event.id}")
+
+            {:error, errors} ->
+              Logger.error("failed to save event #{inspect(errors)}")
+              gen_notice("error: unable to save event")
+          end
+
+        {:deny, _limit} ->
+          Logger.error("rate limit exceeded for event message #{inspect(req)}")
+          gen_notice("error: rate limit exceeded")
       end
 
-    new_state = increment_state_counter(state, :event_count)
-
-    {:reply, :ok, {:text, resp}, new_state}
+    {:reply, :ok, {:text, resp}, state}
   end
 
   @doc """
@@ -114,15 +102,20 @@ defmodule NostrexWeb.NostrSocket do
     {:ok, list} = Jason.decode(req, keys: :atoms)
     [_, subscription_id | filters] = list
 
+    filter_rate_limit = Application.fetch_env!(:nostrex, :filter_rate_limit)
+
     # TODO, ensure subscription_id doesn't have colon since we use as separator in filter_id
-    new_state =
-      state
-      |> handle_req_event(subscription_id, filters)
-      |> increment_state_counter(:req_count)
+    case Hammer.check_rate("filter:#{state.ip}", 60_000, filter_rate_limit) do
+      {:allow, _count} ->
+        new_state = handle_req_event(state, subscription_id, filters)
+        resp = gen_notice("successfully created subscription #{subscription_id}")
+        {:reply, :ok, {:text, resp}, new_state}
 
-    resp = gen_notice("successfully created subscription #{subscription_id}")
-
-    {:reply, :ok, {:text, resp}, new_state}
+      {:deny, _limit} ->
+        Logger.error("rate limit exceeded for REQ message #{inspect(req)}")
+        resp = gen_notice("error: rate limit exceeded")
+        {:reply, :ok, {:text, resp}, state}
+    end
   end
 
   # Handles all Nostr [CLOSE] messages. This endpoint is very ETS read heavy
@@ -151,10 +144,11 @@ defmodule NostrexWeb.NostrSocket do
   def handle_info({:events, events, subscription_id}, state) when is_list(events) do
     Logger.info("Sending events #{inspect(events)} to subscription #{subscription_id}")
     event_json = MessageParser.generate_event_list_response(events, subscription_id)
-    # {:ok, [text: event_json], state}
     {:push, {:text, event_json}, state}
   end
 
+  # Process handler that should not be called, but implemented to catch any unexpected
+  # messages and log them
   def handle_info(info, state) do
     msgs = Process.info(self(), :messages)
 
@@ -168,11 +162,8 @@ defmodule NostrexWeb.NostrSocket do
     {:ok, state}
   end
 
-  # placeholder catch all
-  # def handle_info(_) do
-  #   Logger.info("Catch-all handle_info called")
-  # end
-
+  # Gets called when the socket is killed. This is where we implement cleanup logic
+  # for filtering
   @impl true
   def terminate(_, state) do
     ## Ensure any state gets cleaned up before terminating
@@ -188,9 +179,9 @@ defmodule NostrexWeb.NostrSocket do
   end
 
   # increments a counter on the state object
-  defp increment_state_counter(state, key) do
-    put_in(state, [key], state[key] + 1)
-  end
+  # defp increment_state_counter(state, key) do
+  #   put_in(state, [key], state[key] + 1)
+  # end
 
   defp handle_req_event(state, _subscription_id, filters) when filters == [] do
     state
@@ -261,5 +252,9 @@ defmodule NostrexWeb.NostrSocket do
 
   defp gen_notice(message) do
     ~s(["NOTICE", "#{message}"])
+  end
+
+  defp ip_tuple_to_str({a, b, c, d}) do
+    "#{a}.#{b}.#{c}.#{d}"
   end
 end
