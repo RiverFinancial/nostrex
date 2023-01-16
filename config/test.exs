@@ -13,6 +13,12 @@ config :nostrex, Nostrex.Repo,
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10
 
+# Make rate limits very large in test env
+config :nostrex,
+  socket_rate_limit: 100_000,
+  event_rate_limit: 100_000,
+  filter_rate_limit: 100_000
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :nostrex, NostrexWeb.Endpoint,

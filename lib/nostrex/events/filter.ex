@@ -53,10 +53,4 @@ defmodule Nostrex.Events.Filter do
       add_error(changeset, :ids, "Filter must have one field not empty")
     end
   end
-
-  defp is_empty?([]), do: true
-  defp is_empty?(%{}), do: true
-  defp is_empty?(""), do: true
-  defp is_empty?(nil), do: true
-  defp is_empty?(_), do: false
 end
