@@ -6,6 +6,7 @@ defmodule Nostrex.Events.Event do
   use Ecto.Schema
   import Ecto.Changeset
   alias Nostrex.Events.Tag
+  alias Bitcoinex.Secp256k1.{Point, Signature, Schnorr}
 
   @primary_key {:id, :string, autogenerate: false}
   # @primary_key false
@@ -98,18 +99,39 @@ defmodule Nostrex.Events.Event do
   """
   def calculate_id(event) do
     {:ok, serialized_event} = serialize(event)
-
-    :crypto.hash(:sha256, serialized_event)
+    serialized_event
+    |> Bitcoinex.Utils.sha256()
     |> Base.encode16(case: :lower)
   end
 
-  # TODO
-  # defp validate(event) do
-  # validate event ID
-  # validate signature
-  # end
+  def validate(%__MODULE__{pubkey: pubkey, id: id, sig: signature} = event) do
+    # validate event ID
+    if id != calculate_id(event) do
+      {:error, "incorrect event id"}
+    else
+      # validate signature
+      validate_signature(pubkey, id, signature)
+    end
+  end
 
-  # TODO
-  # defp validate_signature(pubkey, event_id, sig) do
-  # end
+  defp validate_signature(pubkey, event_id, signature) do
+    {:ok, pk} = Point.lift_x(pubkey)
+    {:ok, sig} = Signature.parse_signature(signature)
+
+    z =
+      event_id
+      |> Base.decode16!(case: :lower)
+      |> :binary.decode_unsigned()
+
+    case {pk, sig} do
+      {{:error, msg}, _} ->
+        {:error, "failed to read event pubkey: #{msg}"}
+
+      {_, {:error, msg}} ->
+        {:error, "failed to read event signature: #{msg}"}
+
+      {%Point{} = pk, %Signature{} = sig} ->
+        Schnorr.verify_signature(pk, z, sig)
+    end
+  end
 end
