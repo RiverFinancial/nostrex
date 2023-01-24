@@ -6,7 +6,7 @@ defmodule Nostrex.Events.Event do
   use Ecto.Schema
   import Ecto.Changeset
   alias Nostrex.Events.Tag
-  alias Bitcoinex.Secp256k1.{Point, Signature, Schnorr}
+  alias Bitcoinex.Secp256k1.{Point, Signature, Schnorr, PrivateKey}
 
   @primary_key {:id, :string, autogenerate: false}
   # @primary_key false
@@ -87,8 +87,7 @@ defmodule Nostrex.Events.Event do
       event.pubkey,
       event.created_at,
       event.kind,
-      # TODO: add tag functionality next
-      [],
+      event.tags,
       event.content
     ])
   end
@@ -133,5 +132,32 @@ defmodule Nostrex.Events.Event do
       {%Point{} = pk, %Signature{} = sig} ->
         Schnorr.verify_signature(pk, z, sig)
     end
+  end
+
+  def sign(%__MODULE__{} = event, %PrivateKey{} = sk) do
+    id = calculate_id(event)
+    z =
+      id
+      |> Base.decode16!(case: :lower)
+      |> :binary.decode_unsigned()
+
+    aux = get_rand_uint(32)
+
+    {:ok, signature} = Schnorr.sign(sk, z, aux)
+    sig = serialize_signature(signature)
+
+    %__MODULE__{event | id: id, sig: sig}
+  end
+
+  defp get_rand_uint(len) do
+    len
+    |> :crypto.strong_rand_bytes()
+    |> :binary.decode_unsigned()
+  end
+
+  defp serialize_signature(%Signature{} = sig) do
+    sig
+    |> Signature.serialize_signature()
+    |> Base.encode16(case: :lower)
   end
 end

@@ -5,6 +5,7 @@ defmodule Nostrex.Events do
 
   alias Nostrex.Repo
   alias Nostrex.Events.{Event, Filter}
+  alias Bitcoinex.Secp256k1.PrivateKey
   import Ecto.Changeset
   import Ecto.Query
   alias Phoenix.PubSub
@@ -13,6 +14,17 @@ defmodule Nostrex.Events do
   def create_event(params) do
     %Event{}
     |> Event.changeset(params)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Only to be used for testing purposes. This makes it easy to test
+  serialization, signature verification, and signing
+  """
+  def create_and_sign_event(params, %PrivateKey{} = sk) do
+    %Event{}
+    |> Event.test_only_changeset_no_validation( params)
+    |> Event.sign(e, sk)
     |> Repo.insert()
   end
 
