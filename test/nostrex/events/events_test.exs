@@ -5,6 +5,32 @@ defmodule Nostrex.EventsTest do
   alias Nostrex.Events.Event
   alias Nostrex.FixtureFactory
 
+  @valid_events [
+    %Event{
+      id: "bfe9a9f57c61d04493c74189dc6ffa73f54522d0bf470b6194dcf33c323eb3c0",
+      pubkey: "f7b642493ed5a462c2faebb5d6cd208e42b8ea36f0b479f2aa2f5f5bf6f67aa7",
+      created_at: 1673931680,
+      kind: 1,
+      tags: [],
+      content: "running bitcoin",
+      sig: "6815aaa87665e68a43639631d9dbac7c3f6b825ff14e6689a100eef2d307f54701ec6b28fa9ab9c9ea01215f07db4e507d8e06a0e01527035f0b0ae9e4c2779c"
+    },
+    %Event{
+      # TODO(sachin): incorrect ID
+      id: "035c202e0f98df0ca71ef0167a0d00bccc88cf290481a8c8f21be40e65f6da5f",
+      pubkey: "b0448252cddc47798e5e726b5c6de25f3c486a01427d736915071f6d320abaab",
+      created_at: 1673931868,
+      kind: 1,
+      tags: [
+        ["p", "f7b642493ed5a462c2faebb5d6cd208e42b8ea36f0b479f2aa2f5f5bf6f67aa7", "random"],
+        ["e", "bfe9a9f57c61d04493c74189dc6ffa73f54522d0bf470b6194dcf33c323eb3c0", "other"]
+      ],
+      content: "It might make sense just to get some in case it catches on.",
+      # TODO(sachin): incorrect sig
+      sig: "f0f6d65f6a2257b3af1a8e1760a697ed1dd2ad8839e3fb708e33555ad1d01206d7a68f9a944387c6505a7fd8cbfac29fc8151bf9109e62b5efbb1479893a8bca"
+    },
+  ]
+
   defp sample_event_params do
     map = %{
       id: "75b79351140f7f0002b050d9b2fef4d1f2d5f4ade7a3b04ed24604672d326009",
@@ -104,6 +130,18 @@ defmodule Nostrex.EventsTest do
   end
 
   test "ensure kind value is valid" do
+  end
+
+  describe "ensure signatures validation works" do
+    test "valid signatures pass check" do
+      for e <- @valid_events do
+        assert Event.validate(e)
+      end
+    end
+
+    test "invalid signatures fail check" do
+
+    end
   end
 
   test "ensure invalid signature events don't get persisted" do

@@ -8,7 +8,24 @@ defmodule Nostrex.FixtureFactory do
 
   import Ecto.Changeset
 
+  def create_signed_event(opts \\ []) do
+    # Event.sign will overwrite the random id and sig
+    {:ok, event} =
+      opts
+      |> populate_default_event_params()
+      |> Events.create_and_sign_event()
+    event
+  end
+
   def create_event_no_validation(opts \\ []) do
+    {:ok, event} =
+      opts
+      |> populate_default_event_params()
+      |> Events.create_event_no_validation()
+    event
+  end
+
+  defp populate_default_event_params(opts \\ []) do
     defaults = %{
       id: rand_identifier(),
       pubkey: rand_identifier(),
@@ -47,10 +64,7 @@ defmodule Nostrex.FixtureFactory do
 
     raw = Jason.encode!(params)
 
-    params = Map.put(params, :raw, raw)
-
-    {:ok, event} = Events.create_event_no_validation(params)
-    event
+    Map.put(params, :raw, raw)
   end
 
   def create_filter(opts \\ []) do
@@ -86,7 +100,6 @@ defmodule Nostrex.FixtureFactory do
 
   defp rand_identifier do
     :crypto.hash(:sha256, Integer.to_string(:rand.uniform(99_999_999_999)))
-    |> Base.encode16()
-    |> String.downcase()
+    |> Base.encode16(case: :lower)
   end
 end
